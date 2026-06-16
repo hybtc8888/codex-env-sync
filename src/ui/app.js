@@ -1,4 +1,5 @@
 const repoRootInput = document.querySelector("#repo-root");
+const languageSelect = document.querySelector("#language-select");
 const repoUrlInput = document.querySelector("#repo-url");
 const githubTokenInput = document.querySelector("#github-token");
 const gitNameInput = document.querySelector("#git-name");
@@ -13,6 +14,9 @@ const logList = document.querySelector("#log-list");
 const actionButtons = Array.from(document.querySelectorAll(".action"));
 
 const STORAGE_KEY = "codex-env-sync-settings";
+const LANGUAGE_KEY = "codex-env-sync-language";
+let currentLanguage = window.CodexEnvSyncI18n.normalizeLanguage(localStorage.getItem(LANGUAGE_KEY) || navigator.language);
+let t = window.CodexEnvSyncI18n.createTranslator(currentLanguage);
 
 function loadSavedSettings() {
   try {
@@ -32,6 +36,21 @@ function saveSettings() {
     message: messageInput.value.trim(),
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+}
+
+function applyLanguage(language) {
+  currentLanguage = window.CodexEnvSyncI18n.normalizeLanguage(language);
+  t = window.CodexEnvSyncI18n.createTranslator(currentLanguage);
+  localStorage.setItem(LANGUAGE_KEY, currentLanguage);
+  document.documentElement.lang = currentLanguage;
+  languageSelect.value = currentLanguage;
+
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
 }
 
 function options() {
@@ -75,16 +94,16 @@ async function runAction(action, label) {
   }
   saveSettings();
   setBusy(true);
-  setStatus("info", `${label} running`, "Keep this window open while the operation finishes.");
-  addEvents([{ level: "info", message: `${label} started.` }]);
+  setStatus("info", t("state.running", { label }), t("status.running.copy"));
+  addEvents([{ level: "info", message: t("log.started", { label }) }]);
 
   try {
     const result = await action(options());
     addEvents(result.events);
-    setStatus(result.ok ? "success" : "error", result.ok ? `${label} complete` : `${label} blocked`, result.ok ? "Review the activity log for details." : "Fix the reported issue and try again.");
+    setStatus(result.ok ? "success" : "error", result.ok ? t("state.complete", { label }) : t("state.blocked", { label }), result.ok ? t("status.complete.copy") : t("status.blocked.copy"));
   } catch (error) {
     addEvents([{ level: "error", message: error.stack || error.message }]);
-    setStatus("error", `${label} failed`, "Unexpected error. Review the activity log.");
+    setStatus("error", t("state.failed", { label }), t("status.failed.copy"));
   } finally {
     setBusy(false);
   }
@@ -93,6 +112,7 @@ async function runAction(action, label) {
 async function init() {
   const state = await window.codexSync.getDefaultState();
   const saved = loadSavedSettings();
+  applyLanguage(currentLanguage);
   repoRootInput.value = saved.repoRoot || state.repoRoot;
   repoUrlInput.value = saved.repoUrl || "";
   githubTokenInput.value = "";
@@ -101,10 +121,15 @@ async function init() {
   codexHomeInput.value = saved.codexHome || state.codexHome;
   messageInput.value = saved.message || messageInput.value;
 
-  document.querySelector("#setup-button").addEventListener("click", () => runAction(window.codexSync.setup, "Setup"));
-  document.querySelector("#upload-button").addEventListener("click", () => runAction(window.codexSync.upload, "Upload"));
-  document.querySelector("#download-button").addEventListener("click", () => runAction(window.codexSync.download, "Download"));
-  document.querySelector("#check-button").addEventListener("click", () => runAction(window.codexSync.check, "Safety check"));
+  languageSelect.addEventListener("change", () => {
+    applyLanguage(languageSelect.value);
+    setStatus("info", t("status.ready.title"), t("status.ready.copy"));
+  });
+
+  document.querySelector("#setup-button").addEventListener("click", () => runAction(window.codexSync.setup, t("action.setup")));
+  document.querySelector("#upload-button").addEventListener("click", () => runAction(window.codexSync.upload, t("action.upload")));
+  document.querySelector("#download-button").addEventListener("click", () => runAction(window.codexSync.download, t("action.download")));
+  document.querySelector("#check-button").addEventListener("click", () => runAction(window.codexSync.check, t("action.check")));
 }
 
 init();

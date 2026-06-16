@@ -10,85 +10,93 @@
     <main class="shell">
       <section class="hero" aria-labelledby="app-title">
         <div>
-          <p class="eyebrow">Bidirectional Codex settings sync</p>
-          <h1 id="app-title">Codex Env Sync</h1>
-          <p class="lede">Upload from this machine, download on another. Accounts stay local; settings travel safely.</p>
+          <p class="eyebrow" data-i18n="hero.eyebrow">Bidirectional Codex settings sync</p>
+          <h1 id="app-title" data-i18n="hero.title">Codex Env Sync</h1>
+          <p class="lede" data-i18n="hero.lede">Upload from this machine, download on another. Accounts stay local; settings travel safely.</p>
         </div>
         <div class="status-panel" aria-live="polite">
           <span class="status-dot" id="status-dot"></span>
           <div>
-            <strong id="status-title">Ready</strong>
-            <p id="status-copy">Choose upload or download after checking paths.</p>
+            <strong id="status-title" data-i18n="status.ready.title">Ready</strong>
+            <p id="status-copy" data-i18n="status.ready.copy">Choose upload or download after checking paths.</p>
           </div>
         </div>
       </section>
 
       <section class="grid">
         <form class="control-panel" id="settings-form">
-          <label>
-            GitHub repository URL
-            <input id="repo-url" name="repoUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://github.com/you/codex-env-sync.git…" />
+          <label class="language-field">
+            <span data-i18n="app.languageLabel">Language</span>
+            <select id="language-select" aria-label="Language">
+              <option value="en">English</option>
+              <option value="zh-CN">中文</option>
+            </select>
           </label>
           <label>
-            GitHub token
-            <input id="github-token" name="githubToken" type="password" autocomplete="off" spellcheck="false" placeholder="Optional: enables sync without local Git…" />
+            <span data-i18n="labels.repoUrl">GitHub repository URL</span>
+            <input id="repo-url" name="repoUrl" type="url" inputmode="url" autocomplete="off" data-i18n-placeholder="placeholders.repoUrl" placeholder="https://github.com/you/codex-env-sync.git..." />
+          </label>
+          <label>
+            <span data-i18n="labels.githubToken">GitHub token</span>
+            <input id="github-token" name="githubToken" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.githubToken" placeholder="Optional: enables sync without local Git..." />
           </label>
           <div class="two-up">
             <label>
-              Git name
-              <input id="git-name" name="gitName" autocomplete="off" placeholder="Your Git name…" />
+              <span data-i18n="labels.gitName">Git name</span>
+              <input id="git-name" name="gitName" autocomplete="off" data-i18n-placeholder="placeholders.gitName" placeholder="Your Git name..." />
             </label>
             <label>
-              Git email
-              <input id="git-email" name="gitEmail" type="email" inputmode="email" autocomplete="off" spellcheck="false" placeholder="you@example.com…" />
+              <span data-i18n="labels.gitEmail">Git email</span>
+              <input id="git-email" name="gitEmail" type="email" inputmode="email" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.gitEmail" placeholder="you@example.com..." />
             </label>
           </div>
           <label>
-            Repository folder
+            <span data-i18n="labels.repoRoot">Repository folder</span>
             <input id="repo-root" name="repoRoot" autocomplete="off" />
           </label>
           <label>
-            Codex home
+            <span data-i18n="labels.codexHome">Codex home</span>
             <input id="codex-home" name="codexHome" autocomplete="off" />
           </label>
           <label>
-            Commit message
+            <span data-i18n="labels.message">Commit message</span>
             <input id="commit-message" name="message" value="sync codex settings" autocomplete="off" />
           </label>
           <label class="toggle-line">
             <input id="dry-run" type="checkbox" />
-            <span>Preview only</span>
+            <span data-i18n="labels.preview">Preview only</span>
           </label>
         </form>
 
         <section class="action-board" aria-label="Sync actions">
           <button class="action setup" id="setup-button" type="button">
-            <span>Setup</span>
-            <small>Bind repo and local Git identity</small>
+            <span data-i18n="actions.setup.title">Setup</span>
+            <small data-i18n="actions.setup.copy">Bind repo and local Git identity</small>
           </button>
           <button class="action upload" id="upload-button" type="button">
-            <span>Upload</span>
-            <small>Export safe settings, commit, push</small>
+            <span data-i18n="actions.upload.title">Upload</span>
+            <small data-i18n="actions.upload.copy">Export safe settings, commit, push</small>
           </button>
           <button class="action download" id="download-button" type="button">
-            <span>Download</span>
-            <small>Pull remote settings, install locally</small>
+            <span data-i18n="actions.download.title">Download</span>
+            <small data-i18n="actions.download.copy">Pull remote settings, install locally</small>
           </button>
           <button class="action check" id="check-button" type="button">
-            <span>Check Safety</span>
-            <small>Scan before sharing or installing</small>
+            <span data-i18n="actions.check.title">Check Safety</span>
+            <small data-i18n="actions.check.copy">Scan before sharing or installing</small>
           </button>
         </section>
       </section>
 
       <section class="log-panel" aria-labelledby="log-title">
         <div class="log-head">
-          <h2 id="log-title">Activity</h2>
-          <span id="mode-label">Two-way mode</span>
+          <h2 id="log-title" data-i18n="activity.title">Activity</h2>
+          <span id="mode-label" data-i18n="activity.mode">Two-way mode</span>
         </div>
         <ol id="log-list"></ol>
       </section>
     </main>
+    <script src="./i18n.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

@@ -29,7 +29,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -126,7 +127,8 @@ label {
   font: 700 13px/1.2 ui-sans-serif, system-ui, sans-serif;
 }
 
-input {
+input,
+select {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
@@ -137,14 +139,20 @@ input {
 }
 
 input:focus-visible,
+select:focus-visible,
 .action:focus-visible {
   outline: 3px solid rgba(53, 93, 143, 0.32);
   outline-offset: 2px;
 }
 
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(53, 93, 143, 0.18);
+}
+
+.language-field {
+  max-width: 220px;
 }
 
 .two-up {
