@@ -1,0 +1,11 @@
+*.sh text eol=lf
+*.ps1 text eol=crlf
+*.md text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+

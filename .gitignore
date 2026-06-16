@@ -1,0 +1,32 @@
+# Codex account identity and credentials: never sync
+auth.json
+**/auth.json
+*token*
+*session*
+*credential*
+*secret*
+.env
+
+# Local machine state
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Runtime and build output
+.venv/
+venv/
+env/
+node_modules/
+__pycache__/
+.cache/
+dist/
+build/
+reports/
+outputs/
+backups/
+
+# Local backups created by install scripts
+*.bak
+*.backup
+

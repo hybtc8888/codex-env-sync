@@ -1,0 +1,5 @@
+# Example Codex config for shared preferences only.
+# Do not put account tokens, API keys, or machine-specific project trust here.
+
+model = "gpt-5-codex"
+
