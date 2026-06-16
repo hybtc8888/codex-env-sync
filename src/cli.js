@@ -2,6 +2,7 @@
 const path = require("node:path");
 const {
   checkSyncSafety,
+  configureRepository,
   downloadSettings,
   exportCodexSettings,
   installCodexSettings,
@@ -20,6 +21,14 @@ function parseArgs(argv) {
       args.codexHome = path.resolve(argv[++i]);
     } else if (arg === "--message") {
       args.message = argv[++i];
+    } else if (arg === "--repo-url") {
+      args.repoUrl = argv[++i];
+    } else if (arg === "--git-name") {
+      args.gitName = argv[++i];
+    } else if (arg === "--git-email") {
+      args.gitEmail = argv[++i];
+    } else if (arg === "--github-token") {
+      args.githubToken = argv[++i];
     } else {
       args._.push(arg);
     }
@@ -43,6 +52,8 @@ async function main() {
     result = await uploadSettings(args);
   } else if (command === "download") {
     result = await downloadSettings(args);
+  } else if (command === "setup") {
+    result = await configureRepository(args);
   } else if (command === "export") {
     result = await exportCodexSettings(args);
   } else if (command === "install") {
@@ -55,7 +66,12 @@ async function main() {
 Usage:
   codex-env-sync upload [--dry-run] [--repo PATH] [--codex-home PATH]
   codex-env-sync download [--dry-run] [--repo PATH] [--codex-home PATH]
+  codex-env-sync setup --repo-url URL [--repo PATH] [--git-name NAME] [--git-email EMAIL]
   codex-env-sync check [--repo PATH]
+
+Dependency-free GitHub API mode:
+  codex-env-sync upload --repo-url https://github.com/owner/repo.git --github-token TOKEN
+  codex-env-sync download --repo-url https://github.com/owner/repo.git --github-token TOKEN
 
 Upload exports safe Codex settings, commits synced/, and pushes.
 Download pulls remote changes, installs synced settings, and preserves local auth.`);
@@ -70,4 +86,3 @@ main().catch((error) => {
   console.error(error.stack || error.message);
   process.exitCode = 1;
 });
-

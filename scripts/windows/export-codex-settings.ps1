@@ -80,9 +80,15 @@ function Export-SanitizedConfig {
 
   $lines = Get-Content -Encoding utf8 -LiteralPath $Source
   $output = New-Object System.Collections.Generic.List[string]
+  $unsafeKeys = New-Object System.Collections.Generic.List[string]
   $skipProjectBlock = $false
 
   foreach ($line in $lines) {
+    if ($line -match '^\s*([A-Za-z0-9_.-]*(api[_-]?key|token|secret|password|credential)[A-Za-z0-9_.-]*)\s*=') {
+      $unsafeKeys.Add($Matches[1])
+      continue
+    }
+
     if ($line -match '^\s*\[projects(\.|")') {
       $skipProjectBlock = $true
       continue
@@ -97,6 +103,11 @@ function Export-SanitizedConfig {
     }
   }
 
+  if ($unsafeKeys.Count -gt 0) {
+    Write-Host "Unsafe config key(s) blocked: $($unsafeKeys -join ', ')" -ForegroundColor Red
+    throw "Export blocked."
+  }
+
   Set-Content -Encoding utf8 -LiteralPath $Destination -Value ($output -join [Environment]::NewLine) -NoNewline
 }
 
@@ -108,4 +119,3 @@ Export-SanitizedConfig -Source (Join-Path $CodexHome "config.toml") -Destination
 
 & (Join-Path $PSScriptRoot "check-codex-sync-safety.ps1") -RepoRoot $RepoRoot
 Write-Host "Export complete."
-

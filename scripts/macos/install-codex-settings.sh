@@ -24,6 +24,7 @@ verify_repo() {
     -not -path '*/.cache/*' \
     -not -path '*/dist/*' \
     -not -path '*/build/*' \
+    -not -path '*/release/*' \
     -not -path '*/reports/*' \
     -not -path '*/outputs/*' | grep -q .; then
     say "Unsafe account-bound files found. Remove them before installing."
@@ -41,9 +42,15 @@ verify_repo() {
     --exclude-dir=.cache \
     --exclude-dir=dist \
     --exclude-dir=build \
+    --exclude-dir=release \
     --exclude-dir=reports \
     --exclude-dir=outputs >/dev/null 2>&1; then
     say "Secret-looking values found. Remove them before installing."
+    exit 1
+  fi
+
+  if [ -f "$SYNCED_ROOT/config/config.toml" ] && grep -Eiq '^[[:space:]]*[A-Za-z0-9_.-]*(api[_-]?key|token|secret|password|credential)[A-Za-z0-9_.-]*[[:space:]]*=' "$SYNCED_ROOT/config/config.toml"; then
+    say "Unsafe config key found in synced/config/config.toml. Remove account-bound values before installing."
     exit 1
   fi
 }
@@ -112,4 +119,3 @@ install_dir "$SYNCED_ROOT/prompts" "$CODEX_HOME/prompts"
 install_file "$SYNCED_ROOT/config/config.toml" "$CODEX_HOME/config.toml"
 
 say "Install complete. Run 'codex login' separately on this Mac."
-

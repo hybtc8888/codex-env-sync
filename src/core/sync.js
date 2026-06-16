@@ -13,6 +13,7 @@ const EXCLUDED_DIRECTORIES = new Set([
   ".cache",
   "dist",
   "build",
+  "release",
   "reports",
   "outputs",
   "backups",
@@ -22,6 +23,7 @@ const EXCLUDED_FILE_NAMES = new Set(["auth.json", "history.jsonl", ".env"]);
 const EXCLUDED_FILE_EXTENSIONS = new Set([".pyc", ".pyo", ".log", ".tmp"]);
 const FORBIDDEN_NAME_PATTERN = /(token|session|credential|secret)/i;
 const SECRET_VALUE_PATTERN = /(sk-[a-z0-9_-]{20,}|xox[baprs]-[a-z0-9-]{20,}|gh[pousr]_[a-z0-9_]{20,})/i;
+const UNSAFE_CONFIG_KEY_PATTERN = /^\s*([A-Za-z0-9_.-]*(api[_-]?key|token|secret|password|credential)[A-Za-z0-9_.-]*)\s*=/i;
 
 function getDefaultCodexHome() {
   return process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
@@ -34,6 +36,24 @@ function getDefaultState(overrides = {}) {
     branch: overrides.branch || "main",
     mode: "bidirectional",
   };
+}
+
+function parseGitHubRepo(repoUrl = "") {
+  const value = repoUrl.trim();
+  const patterns = [
+    /^https:\/\/github\.com\/([^/]+)\/([^/.]+)(?:\.git)?$/i,
+    /^git@github\.com:([^/]+)\/([^/.]+)(?:\.git)?$/i,
+    /^([^/\s]+)\/([^/\s.]+)$/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = value.match(pattern);
+    if (match) {
+      return { owner: match[1], repo: match[2] };
+    }
+  }
+
+  throw new Error("Use a GitHub repository URL such as https://github.com/owner/repo.git.");
 }
 
 function ensureDir(dirPath) {
@@ -74,6 +94,16 @@ function listFiles(root) {
   }
 
   return files;
+}
+
+function listLocalSyncedFiles(repoRoot) {
+  const syncedRoot = path.join(repoRoot, "synced");
+  return listFiles(syncedRoot)
+    .filter((file) => path.basename(file) !== ".gitkeep")
+    .map((file) => ({
+      absolute: file,
+      githubPath: path.posix.join("synced", path.relative(syncedRoot, file).split(path.sep).join("/")),
+    }));
 }
 
 function shouldExclude(relativePath) {
@@ -142,9 +172,16 @@ function sanitizeConfig(source, destination, events, dryRun = false) {
 
   const lines = fs.readFileSync(source, "utf8").split(/\r?\n/);
   const output = [];
+  const unsafeKeys = [];
   let skipProjectBlock = false;
 
   for (const line of lines) {
+    const unsafeKey = line.match(UNSAFE_CONFIG_KEY_PATTERN);
+    if (unsafeKey) {
+      unsafeKeys.push(unsafeKey[1]);
+      continue;
+    }
+
     if (/^\s*\[projects(\.|")/.test(line)) {
       skipProjectBlock = true;
       continue;
@@ -159,7 +196,16 @@ function sanitizeConfig(source, destination, events, dryRun = false) {
     }
   }
 
+  if (unsafeKeys.length > 0) {
+    events.push({
+      level: "error",
+      message: `Unsafe config key(s) blocked: ${unsafeKeys.join(", ")}`,
+    });
+    return false;
+  }
+
   copyText(destination, output.join(os.EOL));
+  return true;
 }
 
 function copyText(destination, content) {
@@ -226,12 +272,17 @@ async function exportCodexSettings(options = {}) {
     events,
     options.dryRun
   );
-  sanitizeConfig(
+  const configOk = sanitizeConfig(
     path.join(state.codexHome, "config.toml"),
     path.join(syncedRoot, "config", "config.toml"),
     events,
     options.dryRun
   );
+
+  if (configOk === false) {
+    events.push({ level: "error", message: "Export blocked." });
+    return { ok: false, events, state };
+  }
 
   const safety = await checkSyncSafety({ repoRoot: state.repoRoot });
   events.push(...safety.events);
@@ -261,17 +312,36 @@ function installDirectory(source, destination, events, dryRun = false) {
     return;
   }
 
-  backupIfExists(destination, events, dryRun);
   events.push({ level: "info", message: `Install directory: ${source} -> ${destination}` });
   if (dryRun) {
     return;
   }
 
-  ensureDir(destination);
-  for (const entry of fs.readdirSync(source)) {
-    if (entry !== ".gitkeep") {
-      fs.cpSync(path.join(source, entry), path.join(destination, entry), { recursive: true, force: true });
+  const tempDestination = `${destination}.tmp-${process.pid}`;
+  const backupPath = `${destination}.backup`;
+
+  removeIfExists(tempDestination);
+  ensureDir(tempDestination);
+
+  try {
+    for (const entry of fs.readdirSync(source)) {
+      if (entry !== ".gitkeep") {
+        fs.cpSync(path.join(source, entry), path.join(tempDestination, entry), { recursive: true, force: true });
+      }
     }
+
+    if (fs.existsSync(destination)) {
+      events.push({ level: "info", message: `Backup: ${destination} -> ${backupPath}` });
+      removeIfExists(backupPath);
+      fs.renameSync(destination, backupPath);
+    }
+    fs.renameSync(tempDestination, destination);
+  } catch (error) {
+    removeIfExists(tempDestination);
+    if (!fs.existsSync(destination) && fs.existsSync(backupPath)) {
+      fs.renameSync(backupPath, destination);
+    }
+    throw error;
   }
 }
 
@@ -281,10 +351,28 @@ function installFile(source, destination, events, dryRun = false) {
     return;
   }
 
-  backupIfExists(destination, events, dryRun);
   events.push({ level: "info", message: `Install file: ${source} -> ${destination}` });
-  if (!dryRun) {
-    copyFile(source, destination);
+  if (dryRun) {
+    return;
+  }
+
+  const tempDestination = `${destination}.tmp-${process.pid}`;
+  const backupPath = `${destination}.backup`;
+
+  try {
+    copyFile(source, tempDestination);
+    if (fs.existsSync(destination)) {
+      events.push({ level: "info", message: `Backup: ${destination} -> ${backupPath}` });
+      removeIfExists(backupPath);
+      fs.renameSync(destination, backupPath);
+    }
+    fs.renameSync(tempDestination, destination);
+  } catch (error) {
+    removeIfExists(tempDestination);
+    if (!fs.existsSync(destination) && fs.existsSync(backupPath)) {
+      fs.renameSync(backupPath, destination);
+    }
+    throw error;
   }
 }
 
@@ -325,9 +413,244 @@ function runGit(args, cwd) {
   });
 }
 
+async function githubRequest(options, apiPath, init = {}) {
+  const token = options.githubToken || process.env.GITHUB_TOKEN;
+  if (!token) {
+    throw new Error("GitHub token is required for dependency-free GitHub API sync.");
+  }
+
+  const response = await (options.fetch || fetch)(`https://api.github.com${apiPath}`, {
+    ...init,
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      ...(init.headers || {}),
+    },
+  });
+
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : {};
+  if (!response.ok) {
+    throw new Error(data.message || `GitHub API request failed: ${response.status}`);
+  }
+  return data;
+}
+
+async function uploadSyncedViaGitHub(options = {}) {
+  const state = getDefaultState(options);
+  const { owner, repo } = parseGitHubRepo(options.repoUrl);
+  const branch = options.branch || state.branch;
+  const events = [];
+
+  const ref = await githubRequest(options, `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
+  const headCommit = await githubRequest(options, `/repos/${owner}/${repo}/git/commits/${ref.object.sha}`);
+  const remoteTree = await githubRequest(options, `/repos/${owner}/${repo}/git/trees/${headCommit.tree.sha}?recursive=1`);
+  const localFiles = listLocalSyncedFiles(state.repoRoot);
+  const localPaths = new Set(localFiles.map((file) => file.githubPath));
+
+  const tree = [];
+  for (const file of localFiles) {
+    const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs`, {
+      method: "POST",
+      body: JSON.stringify({
+        content: fs.readFileSync(file.absolute, "base64"),
+        encoding: "base64",
+      }),
+    });
+    tree.push({ path: file.githubPath, mode: "100644", type: "blob", sha: blob.sha });
+  }
+
+  for (const item of remoteTree.tree || []) {
+    if (item.type === "blob" && item.path.startsWith("synced/") && !localPaths.has(item.path)) {
+      tree.push({ path: item.path, mode: "100644", type: "blob", sha: null });
+    }
+  }
+
+  const newTree = await githubRequest(options, `/repos/${owner}/${repo}/git/trees`, {
+    method: "POST",
+    body: JSON.stringify({ base_tree: headCommit.tree.sha, tree }),
+  });
+  const commit = await githubRequest(options, `/repos/${owner}/${repo}/git/commits`, {
+    method: "POST",
+    body: JSON.stringify({
+      message: options.message || `sync codex settings from ${os.hostname()}`,
+      tree: newTree.sha,
+      parents: [ref.object.sha],
+    }),
+  });
+  await githubRequest(options, `/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
+    method: "PATCH",
+    body: JSON.stringify({ sha: commit.sha }),
+  });
+
+  events.push({ level: "success", message: `Uploaded synced settings to ${owner}/${repo}@${branch} without requiring local Git.` });
+  return { ok: true, events, state };
+}
+
+async function downloadSyncedViaGitHub(options = {}) {
+  const state = getDefaultState(options);
+  const { owner, repo } = parseGitHubRepo(options.repoUrl);
+  const branch = options.branch || state.branch;
+  const events = [];
+  const syncedRoot = path.join(state.repoRoot, "synced");
+
+  const ref = await githubRequest(options, `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
+  const headCommit = await githubRequest(options, `/repos/${owner}/${repo}/git/commits/${ref.object.sha}`);
+  const remoteTree = await githubRequest(options, `/repos/${owner}/${repo}/git/trees/${headCommit.tree.sha}?recursive=1`);
+
+  removeIfExists(syncedRoot);
+  ensureDir(path.join(syncedRoot, "config"));
+  ensureDir(path.join(syncedRoot, "skills"));
+  ensureDir(path.join(syncedRoot, "prompts"));
+  copyText(path.join(syncedRoot, "config", ".gitkeep"), "");
+  copyText(path.join(syncedRoot, "skills", ".gitkeep"), "");
+  copyText(path.join(syncedRoot, "prompts", ".gitkeep"), "");
+
+  for (const item of remoteTree.tree || []) {
+    if (item.type !== "blob" || !item.path.startsWith("synced/") || item.path.endsWith(".gitkeep")) {
+      continue;
+    }
+    const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs/${item.sha}`);
+    copyFileFromBuffer(path.join(state.repoRoot, item.path), Buffer.from(blob.content.replace(/\s/g, ""), "base64"));
+  }
+
+  events.push({ level: "success", message: `Downloaded synced settings from ${owner}/${repo}@${branch} without requiring local Git.` });
+  return { ok: true, events, state };
+}
+
+function copyFileFromBuffer(destination, buffer) {
+  ensureDir(path.dirname(destination));
+  fs.writeFileSync(destination, buffer);
+}
+
+async function callGit(options, args, cwd) {
+  if (options.gitRunner) {
+    return options.gitRunner(args, cwd);
+  }
+  return runGit(args, cwd);
+}
+
+async function checkUploadReadiness(options = {}) {
+  const state = getDefaultState(options);
+  const events = [];
+
+  const inRepo = await callGit(options, ["rev-parse", "--is-inside-work-tree"], state.repoRoot);
+  if (inRepo.code !== 0) {
+    return {
+      ok: false,
+      events: [{ level: "error", message: "Repository folder is not a Git repository. Run setup first." }],
+      state,
+    };
+  }
+
+  const status = await callGit(options, ["status", "--porcelain"], state.repoRoot);
+  if (status.code !== 0) {
+    return { ok: false, events: [{ level: "error", message: status.stderr || "Unable to read Git status." }], state };
+  }
+  if (status.stdout.trim()) {
+    return {
+      ok: false,
+      events: [{ level: "error", message: "Working tree has unsaved changes outside the sync flow. Commit, stash, or reset them first." }],
+      state,
+    };
+  }
+
+  const fetched = await callGit(options, ["fetch"], state.repoRoot);
+  if (fetched.code !== 0) {
+    events.push({ level: "info", message: "No upstream fetch available yet; continuing with local upload." });
+    return { ok: true, events, state };
+  }
+
+  const divergence = await callGit(options, ["rev-list", "--left-right", "--count", "HEAD...@{u}"], state.repoRoot);
+  if (divergence.code !== 0) {
+    events.push({ level: "info", message: "No upstream branch configured yet; continuing with local upload." });
+    return { ok: true, events, state };
+  }
+
+  const [aheadText, behindText] = divergence.stdout.trim().split(/\s+/);
+  const ahead = Number(aheadText || 0);
+  const behind = Number(behindText || 0);
+  if (behind > 0) {
+    return {
+      ok: false,
+      events: [{ level: "error", message: `Local branch is behind upstream by ${behind} commit(s). Download first, then upload.` }],
+      state,
+    };
+  }
+
+  events.push({ level: "success", message: `Upload preflight passed${ahead > 0 ? ` with ${ahead} local commit(s) ahead` : ""}.` });
+  return { ok: true, events, state };
+}
+
+async function configureRepository(options = {}) {
+  const state = getDefaultState(options);
+  const events = [];
+
+  if (!options.repoUrl) {
+    return { ok: false, events: [{ level: "error", message: "Repository URL is required." }], state };
+  }
+
+  if (!fs.existsSync(state.repoRoot)) {
+    ensureDir(path.dirname(state.repoRoot));
+    const cloned = await callGit(options, ["clone", options.repoUrl, state.repoRoot], path.dirname(state.repoRoot));
+    events.push({ level: cloned.code === 0 ? "info" : "error", message: (cloned.stdout + cloned.stderr).trim() || cloned.command });
+    if (cloned.code !== 0) {
+      return { ok: false, events, state };
+    }
+  }
+
+  const inRepo = await callGit(options, ["rev-parse", "--is-inside-work-tree"], state.repoRoot);
+  if (inRepo.code !== 0) {
+    const initialized = await callGit(options, ["init"], state.repoRoot);
+    events.push({ level: initialized.code === 0 ? "info" : "error", message: (initialized.stdout + initialized.stderr).trim() || initialized.command });
+    if (initialized.code !== 0) {
+      return { ok: false, events, state };
+    }
+  }
+
+  const remote = await callGit(options, ["remote", "get-url", "origin"], state.repoRoot);
+  const remoteArgs = remote.code === 0 ? ["remote", "set-url", "origin", options.repoUrl] : ["remote", "add", "origin", options.repoUrl];
+  const remoteResult = await callGit(options, remoteArgs, state.repoRoot);
+  events.push({ level: remoteResult.code === 0 ? "info" : "error", message: (remoteResult.stdout + remoteResult.stderr).trim() || `git ${remoteArgs.join(" ")}` });
+  if (remoteResult.code !== 0) {
+    return { ok: false, events, state };
+  }
+
+  if (options.gitName) {
+    const nameResult = await callGit(options, ["config", "user.name", options.gitName], state.repoRoot);
+    if (nameResult.code !== 0) return { ok: false, events: [{ level: "error", message: nameResult.stderr || "Unable to set Git user.name." }], state };
+  }
+  if (options.gitEmail) {
+    const emailResult = await callGit(options, ["config", "user.email", options.gitEmail], state.repoRoot);
+    if (emailResult.code !== 0) return { ok: false, events: [{ level: "error", message: emailResult.stderr || "Unable to set Git user.email." }], state };
+  }
+
+  events.push({ level: "success", message: "Repository setup complete." });
+  return { ok: true, events, state };
+}
+
 async function uploadSettings(options = {}) {
   const state = getDefaultState(options);
   const events = [];
+  if (options.githubToken && options.repoUrl) {
+    const exported = await exportCodexSettings(options);
+    events.push(...exported.events);
+    if (!exported.ok || options.dryRun) {
+      return { ok: exported.ok, events, state };
+    }
+    const uploaded = await uploadSyncedViaGitHub(options);
+    events.push(...uploaded.events);
+    return { ok: uploaded.ok, events, state };
+  }
+
+  const readiness = await checkUploadReadiness(options);
+  events.push(...readiness.events);
+  if (!readiness.ok) {
+    return { ok: false, events, state };
+  }
+
   const exported = await exportCodexSettings(options);
   events.push(...exported.events);
   if (!exported.ok || options.dryRun) {
@@ -342,7 +665,7 @@ async function uploadSettings(options = {}) {
   ];
 
   for (const args of commands) {
-    const result = await runGit(args, state.repoRoot);
+    const result = await callGit(options, args, state.repoRoot);
     const output = `${result.stdout}${result.stderr}`.trim();
     events.push({
       level: result.code === 0 ? "info" : "error",
@@ -366,8 +689,21 @@ async function uploadSettings(options = {}) {
 async function downloadSettings(options = {}) {
   const state = getDefaultState(options);
   const events = [];
+  if (options.githubToken && options.repoUrl) {
+    if (options.dryRun) {
+      events.push({ level: "info", message: "Dry run: skipped GitHub API download." });
+    } else {
+      const downloaded = await downloadSyncedViaGitHub(options);
+      events.push(...downloaded.events);
+    }
+    const installed = await installCodexSettings(options);
+    events.push(...installed.events);
+    events.push({ level: installed.ok ? "success" : "error", message: installed.ok ? "Download complete." : "Download blocked." });
+    return { ok: installed.ok, events, state };
+  }
+
   if (!options.dryRun) {
-    const pulled = await runGit(["pull", "--ff-only"], state.repoRoot);
+    const pulled = await callGit(options, ["pull", "--ff-only"], state.repoRoot);
     const output = `${pulled.stdout}${pulled.stderr}`.trim();
     events.push({
       level: pulled.code === 0 ? "info" : "error",
@@ -388,11 +724,14 @@ async function downloadSettings(options = {}) {
 
 module.exports = {
   checkSyncSafety,
+  checkUploadReadiness,
+  configureRepository,
   downloadSettings,
   exportCodexSettings,
   getDefaultCodexHome,
   getDefaultState,
   installCodexSettings,
+  parseGitHubRepo,
+  uploadSyncedViaGitHub,
   uploadSettings,
 };
-

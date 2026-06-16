@@ -13,7 +13,7 @@ $forbiddenNamePatterns = @(
   ".env"
 )
 
-$ignoredPathPattern = "\\(\.git|backups|node_modules|\.venv|venv|env|__pycache__|\.cache|dist|build|reports|outputs)\\"
+$ignoredPathPattern = "\\(\.git|backups|node_modules|\.venv|venv|env|__pycache__|\.cache|dist|build|release|reports|outputs)\\"
 $violations = New-Object System.Collections.Generic.List[string]
 
 foreach ($pattern in $forbiddenNamePatterns) {
@@ -23,11 +23,14 @@ foreach ($pattern in $forbiddenNamePatterns) {
 }
 
 $secretValuePattern = "(?i)(sk-[a-z0-9_-]{20,}|xox[baprs]-[a-z0-9-]{20,}|gh[pousr]_[a-z0-9_]{20,})"
+$unsafeConfigKeyPattern = "(?im)^\s*[A-Za-z0-9_.-]*(api[_-]?key|token|secret|password|credential)[A-Za-z0-9_.-]*\s*="
 Get-ChildItem -LiteralPath $RepoRoot -Recurse -Force -File |
   Where-Object { $_.FullName -notmatch $ignoredPathPattern } |
   ForEach-Object {
     $content = Get-Content -Raw -ErrorAction SilentlyContinue -LiteralPath $_.FullName
     if ($content -match $secretValuePattern) {
+      $violations.Add($_.FullName)
+    } elseif ($_.Name -eq "config.toml" -and $content -match $unsafeConfigKeyPattern) {
       $violations.Add($_.FullName)
     }
   }
@@ -44,4 +47,3 @@ if ($violations.Count -gt 0) {
 }
 
 Write-Host "Safety check passed: no account files or obvious secrets found." -ForegroundColor Green
-

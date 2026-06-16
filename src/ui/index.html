@@ -26,6 +26,24 @@
       <section class="grid">
         <form class="control-panel" id="settings-form">
           <label>
+            GitHub repository URL
+            <input id="repo-url" name="repoUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://github.com/you/codex-env-sync.git…" />
+          </label>
+          <label>
+            GitHub token
+            <input id="github-token" name="githubToken" type="password" autocomplete="off" spellcheck="false" placeholder="Optional: enables sync without local Git…" />
+          </label>
+          <div class="two-up">
+            <label>
+              Git name
+              <input id="git-name" name="gitName" autocomplete="off" placeholder="Your Git name…" />
+            </label>
+            <label>
+              Git email
+              <input id="git-email" name="gitEmail" type="email" inputmode="email" autocomplete="off" spellcheck="false" placeholder="you@example.com…" />
+            </label>
+          </div>
+          <label>
             Repository folder
             <input id="repo-root" name="repoRoot" autocomplete="off" />
           </label>
@@ -44,6 +62,10 @@
         </form>
 
         <section class="action-board" aria-label="Sync actions">
+          <button class="action setup" id="setup-button" type="button">
+            <span>Setup</span>
+            <small>Bind repo and local Git identity</small>
+          </button>
           <button class="action upload" id="upload-button" type="button">
             <span>Upload</span>
             <small>Export safe settings, commit, push</small>
@@ -70,4 +92,3 @@
     <script src="./app.js"></script>
   </body>
 </html>
-

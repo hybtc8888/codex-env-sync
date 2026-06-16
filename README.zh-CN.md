@@ -58,11 +58,19 @@ codex-env-sync/
 
 ## 桌面 App
 
-桌面 App 提供三个大按钮：
+大多数用户不需要安装 Node.js、npm、Electron 或构建工具。直接从 [Releases](https://github.com/hybtc8888/codex-env-sync/releases) 下载最新的 Windows `.exe` 或 macOS `.dmg` 即可，安装包内置运行时。
 
+桌面 App 提供四个大按钮：
+
+- **Setup**：绑定 GitHub 仓库地址和本机 Git 身份。
 - **Upload**：导出安全设置，运行安全检查，提交 `synced/`，然后 push。
 - **Download**：拉取远端变更，把 `synced/` 安装到本机 Codex 目录。
 - **Check Safety**：分享或安装前扫描仓库。
+
+有两种同步模式：
+
+- **本机 Git 模式**：填写仓库地址、Git 名称、Git 邮箱，然后点一次 **Setup**。这个模式要求机器已安装 Git。
+- **GitHub API 模式**：填写仓库地址和 GitHub token，然后直接点 **Upload** 或 **Download**。这个模式不要求本机安装 Git。token 只在当前 App 窗口使用，不会写入仓库。
 
 从源码运行：
 
@@ -78,11 +86,11 @@ npm run package:win
 npm run package:mac
 ```
 
-推送类似 `v0.2.0` 的版本 tag 后，`.github/workflows/release.yml` 会构建发布包。
+推送类似 `v0.3.0` 的版本 tag 后，`.github/workflows/release.yml` 会构建发布包。发布流程会构建 Windows、macOS arm64 和 macOS x64 资源。
 
 ## CLI Package
 
-发布到 GitHub Packages 后，用户可以这样运行：
+GitHub Packages 主要面向开发者，通常需要为 GitHub npm registry 配置认证。发布到 GitHub Packages 后，用户可以这样运行：
 
 ```bash
 npm install -g @hybtc8888/codex-env-sync --registry=https://npm.pkg.github.com
@@ -97,6 +105,8 @@ codex-env-sync check
 codex-env-sync upload --dry-run
 codex-env-sync download --dry-run
 codex-env-sync upload --repo /path/to/codex-env-sync --codex-home ~/.codex
+codex-env-sync upload --repo-url https://github.com/owner/repo.git --github-token TOKEN
+codex-env-sync download --repo-url https://github.com/owner/repo.git --github-token TOKEN
 ```
 
 ## Windows：导出设置
@@ -168,6 +178,8 @@ CODEX_HOME="$HOME/.codex-work" ./scripts/macos/install-codex-settings.sh
 
 脚本使用白名单方式，只复制 `skills`、`prompts` 和清理后的 `config.toml`。
 
+导出 `config.toml` 时会阻断 `api_key`、`token`、`secret`、`password`、`credential` 等账号相关字段。
+
 安装脚本会先备份原有同步目标：
 
 - `~/.codex/skills.backup`
@@ -175,6 +187,8 @@ CODEX_HOME="$HOME/.codex-work" ./scripts/macos/install-codex-settings.sh
 - `~/.codex/config.toml.backup`
 
 `auth.json` 这类账号文件不会被触碰。每台设备都应该单独运行 `codex login`。
+
+桌面 App 在 GitHub API 模式下可以不依赖本机 Git，但每台机器仍然需要单独安装 Codex。
 
 ## 测试
 

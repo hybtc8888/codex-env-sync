@@ -1,7 +1,9 @@
 const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("node:path");
+const os = require("node:os");
 const {
   checkSyncSafety,
+  configureRepository,
   downloadSettings,
   getDefaultState,
   uploadSettings,
@@ -39,8 +41,8 @@ app.on("activate", () => {
   }
 });
 
-ipcMain.handle("state:get-default", () => getDefaultState());
+ipcMain.handle("state:get-default", () => getDefaultState({ repoRoot: path.join(os.homedir(), "codex-env-sync") }));
 ipcMain.handle("sync:check", (_event, options) => checkSyncSafety(options));
+ipcMain.handle("sync:setup", (_event, options) => configureRepository(options));
 ipcMain.handle("sync:upload", (_event, options) => uploadSettings(options));
 ipcMain.handle("sync:download", (_event, options) => downloadSettings(options));
-

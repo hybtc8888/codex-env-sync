@@ -22,6 +22,7 @@ __pycache__/
 .cache/
 dist/
 build/
+release/
 reports/
 outputs/
 backups/
@@ -29,4 +30,3 @@ backups/
 # Local backups created by install scripts
 *.bak
 *.backup
-

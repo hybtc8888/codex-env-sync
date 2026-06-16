@@ -58,11 +58,19 @@ codex-env-sync/
 
 ## Desktop App
 
-The desktop app gives you three large actions:
+Most users do not need Node.js, npm, Electron, or build tools. Download the latest Windows `.exe` or macOS `.dmg` from [Releases](https://github.com/hybtc8888/codex-env-sync/releases); the app bundle includes its own runtime.
 
+The desktop app gives you four large actions:
+
+- **Setup**: bind a GitHub repository URL and local Git identity.
 - **Upload**: export safe settings, run the safety check, commit `synced/`, and push.
 - **Download**: pull remote changes and install `synced/` into the local Codex home.
 - **Check Safety**: scan the repository before sharing or installing.
+
+Two sync modes are available:
+
+- **Local Git mode**: fill in repository URL, Git name, and Git email, then click **Setup** once. This requires Git on the machine.
+- **GitHub API mode**: fill in repository URL and GitHub token, then use **Upload** or **Download** directly. This does not require local Git. The token is used for the current app window and is not saved to the repository.
 
 Run from source:
 
@@ -78,11 +86,11 @@ npm run package:win
 npm run package:mac
 ```
 
-Release builds are produced by `.github/workflows/release.yml` when a version tag such as `v0.2.0` is pushed.
+Release builds are produced by `.github/workflows/release.yml` when a version tag such as `v0.3.0` is pushed. The release workflow builds Windows, macOS arm64, and macOS x64 assets.
 
 ## CLI Package
 
-After publishing to GitHub Packages, users can run:
+GitHub Packages is mainly for developers. It usually requires npm authentication for GitHub's registry. After publishing to GitHub Packages, users can run:
 
 ```bash
 npm install -g @hybtc8888/codex-env-sync --registry=https://npm.pkg.github.com
@@ -97,6 +105,8 @@ Useful flags:
 codex-env-sync upload --dry-run
 codex-env-sync download --dry-run
 codex-env-sync upload --repo /path/to/codex-env-sync --codex-home ~/.codex
+codex-env-sync upload --repo-url https://github.com/owner/repo.git --github-token TOKEN
+codex-env-sync download --repo-url https://github.com/owner/repo.git --github-token TOKEN
 ```
 
 ## Windows: Export Settings
@@ -168,6 +178,8 @@ CODEX_HOME="$HOME/.codex-work" ./scripts/macos/install-codex-settings.sh
 
 The scripts use an allowlist approach. They copy only `skills`, `prompts`, and sanitized `config.toml`.
 
+`config.toml` export blocks account-like keys such as `api_key`, `token`, `secret`, `password`, and `credential`.
+
 Install scripts back up existing synced targets before replacing them:
 
 - `~/.codex/skills.backup`
@@ -175,6 +187,8 @@ Install scripts back up existing synced targets before replacing them:
 - `~/.codex/config.toml.backup`
 
 Account files such as `auth.json` are not touched. Each machine should run `codex login` independently.
+
+The desktop app can run without local Git when GitHub API mode is used, but Codex itself still needs to be installed separately on each machine.
 
 ## Tests
 
