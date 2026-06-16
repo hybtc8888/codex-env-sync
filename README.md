@@ -1,6 +1,6 @@
 # Codex Env Sync
 
-Safely sync Codex settings between Windows and macOS while each device stays logged in with its own Codex account.
+Safely sync Codex settings between Windows and macOS while each device stays logged in with its own Codex account. Use either the desktop app, the CLI package, or the transparent scripts.
 
 [中文说明](README.zh-CN.md)
 
@@ -22,17 +22,24 @@ It never syncs:
 
 ## Recommended Workflow
 
-Use one computer as the editing source, usually your Windows PC:
+This tool supports bidirectional sync. Any computer can upload the latest safe Codex settings, and any other computer can download them.
 
 ```text
-Windows PC: export safe Codex settings -> commit -> push
-MacBook: pull -> install safe Codex settings -> codex login with its own account
+Computer A: upload safe Codex settings -> commit -> push
+Computer B: download remote settings -> install locally -> keep its own codex login
 ```
+
+Use a simple rule to avoid conflicts: upload from one computer after editing, then download on the other computer before editing there.
 
 ## Repository Layout
 
 ```text
 codex-env-sync/
+├── src/
+│   ├── core/
+│   ├── ui/
+│   ├── cli.js
+│   └── electron-main.js
 ├── scripts/
 │   ├── windows/
 │   │   ├── export-codex-settings.ps1
@@ -47,6 +54,49 @@ codex-env-sync/
 ├── examples/
 ├── tests/
 └── README.md
+```
+
+## Desktop App
+
+The desktop app gives you three large actions:
+
+- **Upload**: export safe settings, run the safety check, commit `synced/`, and push.
+- **Download**: pull remote changes and install `synced/` into the local Codex home.
+- **Check Safety**: scan the repository before sharing or installing.
+
+Run from source:
+
+```bash
+npm install
+npm start
+```
+
+Build local packages:
+
+```bash
+npm run package:win
+npm run package:mac
+```
+
+Release builds are produced by `.github/workflows/release.yml` when a version tag such as `v0.2.0` is pushed.
+
+## CLI Package
+
+After publishing to GitHub Packages, users can run:
+
+```bash
+npm install -g @hybtc8888/codex-env-sync --registry=https://npm.pkg.github.com
+codex-env-sync upload
+codex-env-sync download
+codex-env-sync check
+```
+
+Useful flags:
+
+```bash
+codex-env-sync upload --dry-run
+codex-env-sync download --dry-run
+codex-env-sync upload --repo /path/to/codex-env-sync --codex-home ~/.codex
 ```
 
 ## Windows: Export Settings
@@ -132,11 +182,11 @@ Run:
 
 ```powershell
 .\tests\run.ps1
+npm test
 ```
 
-The tests verify export behavior, install backups, auth preservation, safety checks, and shell syntax when Bash is available.
+The tests verify export behavior, install backups, auth preservation, safety checks, shared Node core behavior, and shell syntax when Bash is available.
 
 ## License
 
 MIT
-

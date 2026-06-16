@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Codex Env Sync</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero" aria-labelledby="app-title">
+        <div>
+          <p class="eyebrow">Bidirectional Codex settings sync</p>
+          <h1 id="app-title">Codex Env Sync</h1>
+          <p class="lede">Upload from this machine, download on another. Accounts stay local; settings travel safely.</p>
+        </div>
+        <div class="status-panel" aria-live="polite">
+          <span class="status-dot" id="status-dot"></span>
+          <div>
+            <strong id="status-title">Ready</strong>
+            <p id="status-copy">Choose upload or download after checking paths.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <form class="control-panel" id="settings-form">
+          <label>
+            Repository folder
+            <input id="repo-root" name="repoRoot" autocomplete="off" />
+          </label>
+          <label>
+            Codex home
+            <input id="codex-home" name="codexHome" autocomplete="off" />
+          </label>
+          <label>
+            Commit message
+            <input id="commit-message" name="message" value="sync codex settings" autocomplete="off" />
+          </label>
+          <label class="toggle-line">
+            <input id="dry-run" type="checkbox" />
+            <span>Preview only</span>
+          </label>
+        </form>
+
+        <section class="action-board" aria-label="Sync actions">
+          <button class="action upload" id="upload-button" type="button">
+            <span>Upload</span>
+            <small>Export safe settings, commit, push</small>
+          </button>
+          <button class="action download" id="download-button" type="button">
+            <span>Download</span>
+            <small>Pull remote settings, install locally</small>
+          </button>
+          <button class="action check" id="check-button" type="button">
+            <span>Check Safety</span>
+            <small>Scan before sharing or installing</small>
+          </button>
+        </section>
+      </section>
+
+      <section class="log-panel" aria-labelledby="log-title">
+        <div class="log-head">
+          <h2 id="log-title">Activity</h2>
+          <span id="mode-label">Two-way mode</span>
+        </div>
+        <ol id="log-list"></ol>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
+

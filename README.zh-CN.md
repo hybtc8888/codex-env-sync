@@ -1,6 +1,6 @@
 # Codex Env Sync
 
-在 Windows 和 macOS 之间安全同步 Codex 设置，同时让每台设备继续使用自己的 Codex 登录账号。
+在 Windows 和 macOS 之间安全同步 Codex 设置，同时让每台设备继续使用自己的 Codex 登录账号。你可以使用桌面 App、CLI package，或者保留透明可审计的脚本方式。
 
 [English README](README.md)
 
@@ -22,17 +22,24 @@ Codex 默认把本地设置放在 `~/.codex`。这里面有些内容适合跨设
 
 ## 推荐工作流
 
-建议把一台电脑作为主编辑设备，通常是 Windows PC：
+这个工具支持双向同步。任意一台电脑都可以上传最新的安全 Codex 设置，另一台电脑可以下载并安装。
 
 ```text
-Windows PC：导出安全的 Codex 设置 -> commit -> push
-MacBook：pull -> 安装安全的 Codex 设置 -> 用本机账号 codex login
+电脑 A：上传安全的 Codex 设置 -> commit -> push
+电脑 B：下载远端设置 -> 安装到本机 -> 保留本机 codex login
 ```
+
+为了避免冲突，建议遵守一个简单规则：在哪台机器改了设置，就先从那台机器上传；另一台机器修改前先下载。
 
 ## 项目结构
 
 ```text
 codex-env-sync/
+├── src/
+│   ├── core/
+│   ├── ui/
+│   ├── cli.js
+│   └── electron-main.js
 ├── scripts/
 │   ├── windows/
 │   │   ├── export-codex-settings.ps1
@@ -47,6 +54,49 @@ codex-env-sync/
 ├── examples/
 ├── tests/
 └── README.zh-CN.md
+```
+
+## 桌面 App
+
+桌面 App 提供三个大按钮：
+
+- **Upload**：导出安全设置，运行安全检查，提交 `synced/`，然后 push。
+- **Download**：拉取远端变更，把 `synced/` 安装到本机 Codex 目录。
+- **Check Safety**：分享或安装前扫描仓库。
+
+从源码运行：
+
+```bash
+npm install
+npm start
+```
+
+本地打包：
+
+```bash
+npm run package:win
+npm run package:mac
+```
+
+推送类似 `v0.2.0` 的版本 tag 后，`.github/workflows/release.yml` 会构建发布包。
+
+## CLI Package
+
+发布到 GitHub Packages 后，用户可以这样运行：
+
+```bash
+npm install -g @hybtc8888/codex-env-sync --registry=https://npm.pkg.github.com
+codex-env-sync upload
+codex-env-sync download
+codex-env-sync check
+```
+
+常用参数：
+
+```bash
+codex-env-sync upload --dry-run
+codex-env-sync download --dry-run
+codex-env-sync upload --repo /path/to/codex-env-sync --codex-home ~/.codex
 ```
 
 ## Windows：导出设置
@@ -132,11 +182,11 @@ CODEX_HOME="$HOME/.codex-work" ./scripts/macos/install-codex-settings.sh
 
 ```powershell
 .\tests\run.ps1
+npm test
 ```
 
-测试会检查导出行为、安装备份、保留本机 auth、安全检查，以及在有 Bash 的环境下检查 shell 脚本语法。
+测试会检查导出行为、安装备份、保留本机 auth、安全检查、共享 Node 核心逻辑，以及在有 Bash 的环境下检查 shell 脚本语法。
 
 ## 开源协议
 
 MIT
-

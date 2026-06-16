@@ -1,0 +1,69 @@
+{
+  "name": "@hybtc8888/codex-env-sync",
+  "version": "0.2.0",
+  "description": "Safely sync Codex settings between Windows and macOS without syncing account auth.",
+  "license": "MIT",
+  "author": "hybtc8888 <hybtc8888@gmail.com>",
+  "homepage": "https://github.com/hybtc8888/codex-env-sync#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hybtc8888/codex-env-sync.git"
+  },
+  "main": "src/electron-main.js",
+  "bin": {
+    "codex-env-sync": "src/cli.js"
+  },
+  "scripts": {
+    "start": "electron .",
+    "check": "node src/cli.js check",
+    "test": "node --test tests/core.test.js",
+    "package:win": "electron-builder --win portable",
+    "package:mac": "electron-builder --mac dmg zip",
+    "package:all": "electron-builder --win portable --mac dmg zip"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "synced",
+    "examples",
+    "README.md",
+    "README.zh-CN.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.hybtc8888.codexenvsync",
+    "productName": "Codex Env Sync",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "synced/**/*",
+      "examples/**/*",
+      "README.md",
+      "README.zh-CN.md",
+      "LICENSE"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools"
+    }
+  }
+}
+
