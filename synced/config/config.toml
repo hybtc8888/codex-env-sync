@@ -1,0 +1,73 @@
+﻿model = "gpt-5.5"
+model_reasoning_effort = "medium"
+notify = [ "C:\\Users\\18594\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\789504f803e82e2b\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
+[windows]
+sandbox = "elevated"
+
+[plugins."documents@openai-primary-runtime"]
+enabled = false
+
+[plugins."spreadsheets@openai-primary-runtime"]
+enabled = false
+
+[plugins."presentations@openai-primary-runtime"]
+enabled = false
+
+[plugins."figma@openai-curated"]
+enabled = true
+
+[plugins."netlify@openai-curated"]
+enabled = true
+
+[plugins."github@openai-curated"]
+enabled = true
+
+[plugins."openai-developers@openai-curated"]
+enabled = true
+
+[plugins."pdf@openai-primary-runtime"]
+enabled = true
+
+[plugins."browser@openai-bundled"]
+enabled = true
+
+[desktop]
+sansFontSize = 18
+localeOverride = "zh-CN"
+git-show-sidebar-pr-icons = true
+conversationDetailMode = "STEPS_PROSE"
+followUpQueueMode = "steer"
+
+[features]
+js_repl = false
+
+[mcp_servers.node_repl]
+args = []
+command = 'C:\Users\18594\AppData\Local\OpenAI\Codex\runtimes\cua_node\789504f803e82e2b\bin\node_repl.exe'
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = 'C:\Users\18594\AppData\Local\OpenAI\Codex\runtimes\cua_node\789504f803e82e2b\bin\node_modules'
+NODE_REPL_NODE_PATH = 'C:\Users\18594\AppData\Local\OpenAI\Codex\runtimes\cua_node\789504f803e82e2b\bin\node.exe'
+NODE_REPL_TRUSTED_CODE_PATHS = 'C:\Users\18594\.codex'
+CODEX_HOME = 'C:\Users\18594\.codex'
+NODE_REPL_TRUSTED_BROWSER_CLIENT_SHA256S = "27dca86fd6b571c49414a4b78e46b57bcf683a46cd1319799c11fbb6cfae3110,bdc61752e0f9d9b1e73e3cba25ca71d3d9fe54d335ed8196378106081474d7c1"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
+NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
+NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
+BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
+BROWSER_USE_CODEX_APP_VERSION = "26.609.41114"
+SKY_CUA_NATIVE_PIPE = "1"
+SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-0e788b19-dff5-4973-8471-e04bd4143c29'
+CODEX_CLI_PATH = 'C:\Users\18594\AppData\Local\OpenAI\Codex\bin\f1c7ee7a13db5fed\codex.exe'
+
+[marketplaces.openai-bundled]
+last_updated = "2026-06-16T08:02:21Z"
+source_type = "local"
+source = '\\?\C:\Users\18594\.codex\.tmp\bundled-marketplaces\openai-bundled'
+
+[marketplaces.openai-primary-runtime]
+last_updated = "2026-06-15T07:53:32Z"
+source_type = "local"
+source = '\\?\C:\Users\18594\.cache\codex-runtimes\codex-primary-runtime\plugins\openai-primary-runtime'
