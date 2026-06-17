@@ -1,6 +1,6 @@
 {
   "name": "@hybtc8888/codex-env-sync",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Safely sync Codex settings between Windows and macOS without syncing account auth.",
   "license": "MIT",
   "author": "hybtc8888 <hybtc8888@gmail.com>",

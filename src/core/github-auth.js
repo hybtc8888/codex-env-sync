@@ -14,13 +14,16 @@ function parseJson(text) {
   return text ? JSON.parse(text) : {};
 }
 
-async function readJsonResponse(response) {
+async function readJsonResponse(response, context = "request") {
   const data = parseJson(await response.text());
   if (!response.ok) {
-    if (response.status === 404) {
+    if (response.status === 404 && context === "device") {
       throw new Error("GitHub Device Flow returned 404. Check that this GitHub App Client ID is correct and Device Flow is enabled in the app settings.");
     }
-    throw new Error(data.error_description || data.message || `GitHub request failed: ${response.status}`);
+    const error = new Error(data.error_description || data.message || `GitHub request failed: ${response.status}`);
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
   return data;
 }
@@ -64,7 +67,7 @@ async function requestDeviceCode(options = {}) {
       "Content-Type": "application/x-www-form-urlencoded",
     },
   });
-  const data = await readJsonResponse(response);
+  const data = await readJsonResponse(response, "device");
 
   return {
     deviceCode: data.device_code,
@@ -93,7 +96,7 @@ async function exchangeDeviceCode(options = {}) {
       grant_type: DEVICE_GRANT_TYPE,
     }),
   });
-  const data = await readJsonResponse(response);
+  const data = await readJsonResponse(response, "device");
 
   if (data.error) {
     return {
@@ -187,7 +190,7 @@ async function githubApi(options, apiPath, init = {}) {
     },
     body: init.body,
   });
-  return readJsonResponse(response);
+  return readJsonResponse(response, "api");
 }
 
 async function fetchGitHubViewer(options = {}) {

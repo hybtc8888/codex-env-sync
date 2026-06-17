@@ -37,6 +37,8 @@ let currentLanguage = window.CodexEnvSyncI18n.normalizeLanguage(localStorage.get
 let t = window.CodexEnvSyncI18n.createTranslator(currentLanguage);
 let currentAuthSessionId = "";
 let authFinished = false;
+let currentGitHubLogin = "";
+let currentGitHubAuthStatus = "";
 let operationStartedAt = 0;
 let operationTimer = null;
 const GITHUB_REPO_URL = "https://github.com/hybtc8888/codex-env-sync";
@@ -55,10 +57,36 @@ function saveSettings() {
     repoUrl: repoUrlInput.value.trim(),
     gitName: gitNameInput.value.trim(),
     gitEmail: gitEmailInput.value.trim(),
+    githubLogin: currentGitHubLogin,
+    githubAuthStatus: currentGitHubAuthStatus,
     codexHome: codexHomeInput.value.trim(),
     message: messageInput.value.trim(),
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+}
+
+function hasTrustedSavedGitHubIdentity(saved = {}) {
+  return saved.githubAuthStatus === "connected" && Boolean(saved.githubLogin);
+}
+
+function clearGitHubIdentityFields(status = "pending") {
+  githubTokenInput.value = "";
+  gitNameInput.value = "";
+  gitEmailInput.value = "";
+  currentGitHubLogin = "";
+  currentGitHubAuthStatus = status;
+}
+
+function applyConnectedGitHubSettings(completed = {}) {
+  const user = completed.user || {};
+  currentGitHubLogin = user.login || "";
+  currentGitHubAuthStatus = currentGitHubLogin ? "connected" : "";
+  githubTokenInput.value = completed.githubToken || "";
+  gitNameInput.value = user.gitName || "";
+  gitEmailInput.value = user.gitEmail || "";
+  if (completed.repository) {
+    repoUrlInput.value = completed.repository.cloneUrl || repoUrlInput.value;
+  }
 }
 
 function applyLanguage(language) {
@@ -140,6 +168,15 @@ function localizeEventMessage(message) {
   if (text.startsWith("GitHub App cannot create the private sync repository yet.")) {
     return t("log.createRepoPermission");
   }
+  match = text.match(/^GitHub App installed repositories visible to this account: (.+)\.$/);
+  if (match) return t("log.visibleRepos", { repos: match[1] });
+  match = text.match(/^The private sync repository (.+) already exists, but this GitHub App authorization cannot see it\./);
+  if (match) return t("log.repoExistsButHidden", { repo: match[1] });
+  if (text.startsWith("The GitHub App is currently visible only on the source repository.")) {
+    return t("log.sourceOnlyInstall");
+  }
+  match = text.match(/^The GitHub App cannot see a usable codex-env-sync-data repository\. Visible repositories: (.+)\.$/);
+  if (match) return t("log.noUsableRepo", { repos: match[1] });
   match = text.match(/^Could not create the private sync repository: (.+)$/);
   if (match) return t("log.createRepoFailed", { reason: match[1] });
   if (text.startsWith("No installed repositories found.")) {
@@ -357,6 +394,8 @@ async function connectGitHub() {
 
   try {
     const started = await window.codexSync.startGitHubAuth();
+    clearGitHubIdentityFields("pending");
+    saveSettings();
     currentAuthSessionId = started.sessionId || "";
     githubUserCode.textContent = started.userCode;
     githubAuthCopy.textContent = t("auth.code.waiting");
@@ -386,20 +425,14 @@ async function connectGitHub() {
       clearTimeout(longWaitHintTimer);
     }
 
-    githubTokenInput.value = completed.githubToken || "";
     authFinished = true;
     currentAuthSessionId = "";
-    if (completed.user) {
-      gitNameInput.value = completed.user.gitName || gitNameInput.value;
-      gitEmailInput.value = completed.user.gitEmail || gitEmailInput.value;
-      addEvents([{ level: "success", message: t("log.connected", { login: completed.user.login }) }]);
-    }
-    if (completed.repository) {
-      repoUrlInput.value = completed.repository.cloneUrl || repoUrlInput.value;
-      addEvents([{ level: "success", message: t("log.repoSelected", { repo: completed.repository.fullName }) }]);
+    if (completed.ok && completed.user) {
+      applyConnectedGitHubSettings(completed);
     } else {
-      addEvents([{ level: "error", message: completed.repositories && completed.repositories.length > 0 ? t("log.sourceRepoBlocked") : t("log.noInstalledRepo") }]);
+      clearGitHubIdentityFields("blocked");
     }
+    addEvents(completed.events);
     saveSettings();
     githubAuthCopy.textContent = completed.ok ? t("auth.code.complete") : t("auth.code.installMissing");
     authDialogCopy.textContent = completed.ok ? t("auth.dialog.complete") : t("auth.dialog.installMissing");
@@ -421,12 +454,15 @@ async function connectGitHub() {
 async function init() {
   const state = await window.codexSync.getDefaultState();
   const saved = loadSavedSettings();
+  const trustedSavedIdentity = hasTrustedSavedGitHubIdentity(saved);
+  currentGitHubLogin = trustedSavedIdentity ? saved.githubLogin : "";
+  currentGitHubAuthStatus = trustedSavedIdentity ? saved.githubAuthStatus : "";
   applyLanguage(currentLanguage);
   repoRootInput.value = saved.repoRoot || state.repoRoot;
   repoUrlInput.value = saved.repoUrl || "";
   githubTokenInput.value = "";
-  gitNameInput.value = saved.gitName || "";
-  gitEmailInput.value = saved.gitEmail || "";
+  gitNameInput.value = trustedSavedIdentity ? saved.gitName || "" : "";
+  gitEmailInput.value = trustedSavedIdentity ? saved.gitEmail || "" : "";
   codexHomeInput.value = saved.codexHome || state.codexHome;
   messageInput.value = saved.message || messageInput.value;
 

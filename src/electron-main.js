@@ -7,6 +7,7 @@ const {
   createPrivateSyncRepository,
   fetchGitHubAppRepositories,
   fetchGitHubViewer,
+  isSourceRepository,
   requestDeviceCode,
   selectPreferredRepository,
   waitForDeviceAuthorization,
@@ -20,6 +21,13 @@ const {
 } = require("./core/sync");
 
 const authSessions = new Map();
+
+function formatRepositoryList(repositories) {
+  if (!repositories || repositories.length === 0) {
+    return "none";
+  }
+  return repositories.map((repo) => repo.fullName).filter(Boolean).join(", ");
+}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -102,8 +110,10 @@ ipcMain.handle("github-auth:complete", async (_event, options = {}) => {
   const user = await fetchGitHubViewer(authOptions);
   const repositories = await fetchGitHubAppRepositories(authOptions);
   const events = [{ level: "success", message: `Connected GitHub as ${user.login}.` }];
+  events.push({ level: "info", message: `GitHub App installed repositories visible to this account: ${formatRepositoryList(repositories)}.` });
   let repository = selectPreferredRepository(repositories);
   const hasInstalledRepositories = repositories.length > 0;
+  const installedOnlySourceRepository = hasInstalledRepositories && repositories.every(isSourceRepository);
   let createAttempted = false;
 
   if (!repository) {
@@ -114,12 +124,17 @@ ipcMain.handle("github-auth:complete", async (_event, options = {}) => {
       events.push({ level: "success", message: `Created private sync repository ${repository.fullName}.` });
     } catch (error) {
       const message = String(error.message || error);
+      const alreadyExists = error.status === 422 && /already exists|name already exists|Repository creation failed/i.test(message);
       events.push({
         level: "error",
-          message:
-            message.includes("Resource not accessible") || message.includes("403")
-            ? "GitHub App cannot create the private sync repository yet. Add Repository permissions: Administration Read and write, then approve the permission update on the app installation page."
-            : `Could not create the private sync repository: ${message}`,
+        message:
+          alreadyExists
+            ? `The private sync repository ${user.login}/${DEFAULT_SYNC_REPOSITORY_NAME} already exists, but this GitHub App authorization cannot see it. Install or update the app so it includes that repository, then connect again.`
+            : installedOnlySourceRepository
+              ? `The GitHub App is currently visible only on the source repository. Add ${DEFAULT_SYNC_REPOSITORY_NAME} to the app installation, then connect again.`
+              : message.includes("Resource not accessible") || message.includes("403")
+                ? "GitHub App cannot create the private sync repository yet. Add Repository permissions: Administration Read and write, then approve the permission update on the app installation page."
+                : `Could not create the private sync repository: ${message}`,
       });
     }
   }
@@ -141,7 +156,7 @@ ipcMain.handle("github-auth:complete", async (_event, options = {}) => {
                 {
                   level: "error",
                   message: hasInstalledRepositories
-                    ? `The GitHub App is installed only on the source repository. Create or select a private ${DEFAULT_SYNC_REPOSITORY_NAME} repository for synced data.`
+                    ? `The GitHub App cannot see a usable ${DEFAULT_SYNC_REPOSITORY_NAME} repository. Visible repositories: ${formatRepositoryList(repositories)}.`
                     : `No installed repositories found. Install the GitHub App at ${GITHUB_APP_PUBLIC_URL}.`,
                 },
               ]),

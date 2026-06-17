@@ -139,6 +139,20 @@ test("fetchGitHubViewer returns safe profile defaults for the UI", async () => {
   assert.equal(result.gitEmail, "octocat@users.noreply.github.com");
 });
 
+test("GitHub API 404 keeps the API error instead of reporting Device Flow", async () => {
+  await assert.rejects(
+    fetchGitHubViewer({
+      githubToken: "github-token",
+      fetch: async () => makeJsonResponse({ message: "Not Found" }, false, 404),
+    }),
+    (error) => {
+      assert.equal(error.message, "Not Found");
+      assert.equal(error.status, 404);
+      return true;
+    }
+  );
+});
+
 test("fetchGitHubAppRepositories returns installed repositories", async () => {
   const urls = [];
   const result = await fetchGitHubAppRepositories({
