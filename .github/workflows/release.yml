@@ -14,7 +14,16 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            artifact: Windows-x64
+            build_command: npm run package:win:x64
+          - os: windows-11-arm
+            artifact: Windows-arm64
+            build_command: npm run package:win:arm64
+          - os: macos-latest
+            artifact: macOS
+            build_command: npm run package:mac
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -24,15 +33,11 @@ jobs:
           registry-url: https://npm.pkg.github.com
       - run: npm ci
       - run: npm test
-      - name: Build Windows app
-        if: runner.os == 'Windows'
-        run: npm run package:win
-      - name: Build macOS app
-        if: runner.os == 'macOS'
-        run: npm run package:mac
+      - name: Build desktop app
+        run: ${{ matrix.build_command }}
       - uses: actions/upload-artifact@v4
         with:
-          name: codex-env-sync-${{ runner.os }}
+          name: codex-env-sync-${{ matrix.artifact }}
           path: |
             release/*.exe
             release/*.dmg
