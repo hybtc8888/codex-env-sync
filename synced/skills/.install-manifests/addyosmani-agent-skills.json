@@ -1,0 +1,120 @@
+﻿{
+    "package":  "addyosmani/agent-skills",
+    "source_url":  "https://github.com/addyosmani/agent-skills",
+    "local_source":  "C:\\Users\\18594\\.codex\\skills-disabled\\agent-skills",
+    "installed_at":  "2026-06-16T12:09:55.7542648Z",
+    "commit":  "a5f0b176381e9fea24a61aefc243506686aa2435",
+    "active_skills_dir":  "C:\\Users\\18594\\.codex\\skills",
+    "installed":  [
+                      {
+                          "name":  "api-and-interface-design",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\api-and-interface-design"
+                      },
+                      {
+                          "name":  "browser-testing-with-devtools",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\browser-testing-with-devtools"
+                      },
+                      {
+                          "name":  "ci-cd-and-automation",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\ci-cd-and-automation"
+                      },
+                      {
+                          "name":  "code-review-and-quality",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\code-review-and-quality"
+                      },
+                      {
+                          "name":  "code-simplification",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\code-simplification"
+                      },
+                      {
+                          "name":  "context-engineering",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\context-engineering"
+                      },
+                      {
+                          "name":  "debugging-and-error-recovery",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\debugging-and-error-recovery"
+                      },
+                      {
+                          "name":  "deprecation-and-migration",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\deprecation-and-migration"
+                      },
+                      {
+                          "name":  "documentation-and-adrs",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\documentation-and-adrs"
+                      },
+                      {
+                          "name":  "doubt-driven-development",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\doubt-driven-development"
+                      },
+                      {
+                          "name":  "frontend-ui-engineering",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\frontend-ui-engineering"
+                      },
+                      {
+                          "name":  "git-workflow-and-versioning",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\git-workflow-and-versioning"
+                      },
+                      {
+                          "name":  "idea-refine",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\idea-refine"
+                      },
+                      {
+                          "name":  "incremental-implementation",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\incremental-implementation"
+                      },
+                      {
+                          "name":  "interview-me",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\interview-me"
+                      },
+                      {
+                          "name":  "observability-and-instrumentation",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\observability-and-instrumentation"
+                      },
+                      {
+                          "name":  "performance-optimization",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\performance-optimization"
+                      },
+                      {
+                          "name":  "planning-and-task-breakdown",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\planning-and-task-breakdown"
+                      },
+                      {
+                          "name":  "security-and-hardening",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\security-and-hardening"
+                      },
+                      {
+                          "name":  "shipping-and-launch",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\shipping-and-launch"
+                      },
+                      {
+                          "name":  "source-driven-development",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\source-driven-development"
+                      },
+                      {
+                          "name":  "spec-driven-development",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\spec-driven-development"
+                      },
+                      {
+                          "name":  "using-agent-skills",
+                          "destination":  "C:\\Users\\18594\\.codex\\skills\\using-agent-skills"
+                      }
+                  ],
+    "skipped":  [
+                    {
+                        "name":  "test-driven-development",
+                        "reason":  "destination already existed",
+                        "destination":  "C:\\Users\\18594\\.codex\\skills\\test-driven-development"
+                    }
+                ],
+    "uninstall_note":  "Delete only the directories listed in installed[].destination to uninstall this package. Do not delete skipped items; they pre-existed.",
+    "plugin_registration":  {
+                                "status":  "removed",
+                                "removed_at":  "2026-06-16T12:20:04.7286004Z",
+                                "note":  "Codex plugin wrapper was removed by request. Active skills remain installed under C:\\Users\\18594\\.codex\\skills."
+                            },
+    "hook_registration":  {
+                              "status":  "not_registered",
+                              "reason":  "Upstream hooks are Claude Code hook scripts; Codex usage does not require registering them.",
+                              "source_hooks_preserved_in":  "C:\\Users\\18594\\.codex\\skills-disabled\\agent-skills\\hooks"
+                          }
+}

@@ -32,3 +32,36 @@ Preferred source: `C:\Users\18594\.codex\skills`. Duplicate `.agents` copies are
 | writing-plans | Creating implementation plans before touching code. |
 | writing-skills | Creating, editing, or verifying skills. |
 | xiaohongshu-cover-generator | Generating Xiaohongshu-style cover images. |
+
+## Installed Package: addyosmani/agent-skills
+
+Source: `https://github.com/addyosmani/agent-skills`
+Manifest: `C:\Users\18594\.codex\skills\.install-manifests\addyosmani-agent-skills.json`
+
+| Skill | Use when |
+| --- | --- |
+| api-and-interface-design | Designing APIs, module boundaries, or public interfaces. |
+| browser-testing-with-devtools | Testing or debugging browser-based behavior with DevTools. |
+| ci-cd-and-automation | Setting up or modifying CI/CD, quality gates, or deployment workflows. |
+| code-review-and-quality | Reviewing code quality before merge or delivery. |
+| code-simplification | Refactoring for clarity without changing behavior. |
+| context-engineering | Improving agent context setup or session handoff quality. |
+| debugging-and-error-recovery | Diagnosing failing tests, broken builds, or unexpected behavior. |
+| deprecation-and-migration | Removing old systems, APIs, or migrating users/features. |
+| documentation-and-adrs | Recording architecture decisions or documenting important changes. |
+| doubt-driven-development | Stress-testing important decisions with adversarial review. |
+| frontend-ui-engineering | Building or modifying user-facing interfaces. |
+| git-workflow-and-versioning | Managing branches, commits, diffs, and release history. |
+| idea-refine | Turning rough ideas into concrete proposals. |
+| incremental-implementation | Delivering changes in small, verifiable slices. |
+| interview-me | Clarifying underspecified intent through focused questions. |
+| observability-and-instrumentation | Adding logging, metrics, tracing, alerts, or runbooks. |
+| performance-optimization | Measuring and improving application performance. |
+| planning-and-task-breakdown | Breaking specs or requirements into ordered implementation tasks. |
+| security-and-hardening | Hardening code that handles users, auth, data, or external integrations. |
+| shipping-and-launch | Preparing a production launch, rollout, or rollback plan. |
+| source-driven-development | Grounding framework or library decisions in official sources. |
+| spec-driven-development | Writing a spec before a significant feature or project. |
+| using-agent-skills | Routing work to the appropriate addyosmani agent skill. |
+
+Skipped due to pre-existing local skill: `test-driven-development`.

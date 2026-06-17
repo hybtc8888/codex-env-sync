@@ -1,51 +1,38 @@
-﻿model = "gpt-5.5"
+model = "gpt-5.5"
 model_reasoning_effort = "medium"
 notify = [ "C:\\Users\\18594\\AppData\\Local\\OpenAI\\Codex\\runtimes\\cua_node\\789504f803e82e2b\\bin\\node_modules\\@oai\\sky\\bin\\windows\\codex-computer-use.exe", "turn-ended" ]
 [windows]
 sandbox = "elevated"
-
 [plugins."documents@openai-primary-runtime"]
 enabled = false
-
 [plugins."spreadsheets@openai-primary-runtime"]
 enabled = false
-
 [plugins."presentations@openai-primary-runtime"]
 enabled = false
-
 [plugins."figma@openai-curated"]
 enabled = true
-
 [plugins."netlify@openai-curated"]
 enabled = true
-
 [plugins."github@openai-curated"]
 enabled = true
-
 [plugins."openai-developers@openai-curated"]
 enabled = true
-
 [plugins."pdf@openai-primary-runtime"]
 enabled = true
-
 [plugins."browser@openai-bundled"]
 enabled = true
-
 [desktop]
 sansFontSize = 18
 localeOverride = "zh-CN"
 git-show-sidebar-pr-icons = true
 conversationDetailMode = "STEPS_PROSE"
 followUpQueueMode = "steer"
-
 [features]
 js_repl = false
-
 [mcp_servers.node_repl]
 args = []
 command = 'C:\Users\18594\AppData\Local\OpenAI\Codex\runtimes\cua_node\789504f803e82e2b\bin\node_repl.exe'
 startup_timeout_sec = 120
-
 [mcp_servers.node_repl.env]
 NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
 NODE_REPL_NODE_MODULE_DIRS = 'C:\Users\18594\AppData\Local\OpenAI\Codex\runtimes\cua_node\789504f803e82e2b\bin\node_modules'
@@ -59,14 +46,12 @@ NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunct
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
 BROWSER_USE_CODEX_APP_VERSION = "26.609.41114"
 SKY_CUA_NATIVE_PIPE = "1"
-SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-0e788b19-dff5-4973-8471-e04bd4143c29'
+SKY_CUA_NATIVE_PIPE_DIRECTORY = '\\.\pipe\codex-computer-use-ea9401f7-c7ba-4c0f-9f3e-a4a6df5cd991'
 CODEX_CLI_PATH = 'C:\Users\18594\AppData\Local\OpenAI\Codex\bin\f1c7ee7a13db5fed\codex.exe'
-
 [marketplaces.openai-bundled]
 last_updated = "2026-06-16T08:02:21Z"
 source_type = "local"
 source = '\\?\C:\Users\18594\.codex\.tmp\bundled-marketplaces\openai-bundled'
-
 [marketplaces.openai-primary-runtime]
 last_updated = "2026-06-15T07:53:32Z"
 source_type = "local"
