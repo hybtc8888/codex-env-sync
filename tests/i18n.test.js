@@ -18,6 +18,10 @@ test("createTranslator returns English and Chinese copy", () => {
   assert.equal(zh("actions.upload.title"), "上传");
   assert.equal(en("status.ready.title"), "Ready");
   assert.equal(zh("status.ready.title"), "准备就绪");
+  assert.equal(en("actions.connect.title"), "Connect GitHub");
+  assert.equal(zh("actions.connect.title"), "连接 GitHub");
+  assert.equal(en("hero.title"), "Codex Env Sync");
+  assert.equal(zh("hero.title"), "Codex Env Sync");
 });
 
 test("every English key exists in Chinese dictionary", () => {
@@ -25,4 +29,3 @@ test("every English key exists in Chinese dictionary", () => {
 
   assert.deepEqual(missing, []);
 });
-

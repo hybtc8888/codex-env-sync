@@ -9,6 +9,7 @@ const {
   installCodexSettings,
   checkSyncSafety,
   checkUploadReadiness,
+  checkSyncRepositoryUrl,
   configureRepository,
   parseGitHubRepo,
   getDefaultState,
@@ -148,6 +149,13 @@ test("parseGitHubRepo accepts common GitHub URL formats", () => {
     owner: "example",
     repo: "codex-env-sync",
   });
+});
+
+test("checkSyncRepositoryUrl blocks the source code repository", () => {
+  const result = checkSyncRepositoryUrl("https://github.com/example/codex-env-sync.git");
+
+  assert.equal(result.ok, false);
+  assert.match(result.event.message, /source code repository/);
 });
 
 test("getDefaultState creates user-facing defaults", () => {

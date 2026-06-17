@@ -1,78 +1,71 @@
 # Codex Env Sync
 
-Safely sync Codex settings between Windows and macOS while each device stays logged in with its own Codex account. Use either the desktop app, the CLI package, or the transparent scripts.
+Safely sync Codex settings between Windows and macOS while each device keeps its own Codex login.
 
 [中文说明](README.zh-CN.md)
 
-## What This Tool Does
+## What It Syncs
 
-Codex stores local settings under `~/.codex` by default. Some files are useful development preferences, while others are account identity or machine-local state. This project syncs only the safe parts:
+Codex stores local settings under `~/.codex`. This tool syncs only safe, portable settings:
 
 - `skills/`
 - `prompts/`
-- `config.toml`, after removing machine-specific `[projects.*]` entries
+- sanitized `config.toml`
 
-It never syncs:
+It never syncs account or machine-local data:
 
 - `auth.json`
 - login sessions
 - tokens, API keys, credentials, or secrets
 - `history.jsonl`
-- virtual environments, caches, reports, build outputs, and backups
-
-## Recommended Workflow
-
-This tool supports bidirectional sync. Any computer can upload the latest safe Codex settings, and any other computer can download them.
-
-```text
-Computer A: upload safe Codex settings -> commit -> push
-Computer B: download remote settings -> install locally -> keep its own codex login
-```
-
-Use a simple rule to avoid conflicts: upload from one computer after editing, then download on the other computer before editing there.
-
-## Repository Layout
-
-```text
-codex-env-sync/
-├── src/
-│   ├── core/
-│   ├── ui/
-│   ├── cli.js
-│   └── electron-main.js
-├── scripts/
-│   ├── windows/
-│   │   ├── export-codex-settings.ps1
-│   │   ├── install-codex-settings.ps1
-│   │   └── check-codex-sync-safety.ps1
-│   └── macos/
-│       └── install-codex-settings.sh
-├── synced/
-│   ├── config/
-│   ├── skills/
-│   └── prompts/
-├── examples/
-├── tests/
-└── README.md
-```
+- virtual environments, caches, reports, build outputs, or backups
 
 ## Desktop App
 
-Most users do not need Node.js, npm, Electron, or build tools. Download the latest Windows `.exe` or macOS `.dmg` from [Releases](https://github.com/hybtc8888/codex-env-sync/releases); the app bundle includes its own runtime.
+Most users do not need Node.js, npm, Electron, Git, or build tools. Download the Windows `.exe` or macOS `.dmg` from [Releases](https://github.com/hybtc8888/codex-env-sync/releases).
 
-The desktop app gives you four large actions:
+The main flow is intentionally small:
 
-- **Setup**: bind a GitHub repository URL and local Git identity.
-- **Upload**: export safe settings, run the safety check, commit `synced/`, and push.
-- **Download**: pull remote changes and install `synced/` into the local Codex home.
-- **Check Safety**: scan the repository before sharing or installing.
+1. Create a private GitHub repository named `codex-env-sync-data`.
+2. Install the `Codex Env Sync` GitHub App on that private data repository.
+3. Click **Connect GitHub** in the desktop app.
+4. Click **Upload** on one machine.
+5. Click **Download** on another machine.
 
-Two sync modes are available:
+The GitHub App authorization lets the desktop app read and write only the repository where synced settings are stored. It avoids local Git setup and makes PC/Mac sync one-click. The access token is used only in the current app window and is not written to the repository.
 
-- **Local Git mode**: fill in repository URL, Git name, and Git email, then click **Setup** once. This requires Git on the machine.
-- **GitHub API mode**: fill in repository URL and GitHub token, then use **Upload** or **Download** directly. This does not require local Git. The token is used for the current app window and is not saved to the repository.
+By default, the app looks for a user data repository named:
 
-Run from source:
+```text
+codex-env-sync-data
+```
+
+Keep this separate from the source code repository `codex-env-sync`. If the app is installed only on the source repository, the desktop app will refuse to sync and ask you to choose a private data repository instead.
+
+Advanced settings still allow manual repository URL, token, Git identity, repository folder, Codex home, commit message, and preview-only runs.
+
+## Developer GitHub App
+
+The public desktop build uses this GitHub App:
+
+```text
+https://github.com/apps/codex-env-sync
+```
+
+The bundled Client ID is not a secret. Do not bundle a Client Secret in the desktop app.
+
+Required GitHub App settings:
+
+- Device Flow: enabled
+- Webhook: disabled
+- Repository permissions:
+  - `Contents: Read and write`
+  - `Administration: Read and write` (only used to create the private `codex-env-sync-data` repository)
+- Account permissions: none
+- Events: none
+- Installation target: any account
+
+## Local Development
 
 ```bash
 npm install
@@ -86,120 +79,33 @@ npm run package:win
 npm run package:mac
 ```
 
-Release builds are produced by `.github/workflows/release.yml` when a version tag such as `v0.3.0` is pushed. The release workflow builds Windows, macOS arm64, and macOS x64 assets.
-
-## CLI Package
-
-GitHub Packages is mainly for developers. It usually requires npm authentication for GitHub's registry. After publishing to GitHub Packages, users can run:
-
-```bash
-npm install -g @hybtc8888/codex-env-sync --registry=https://npm.pkg.github.com
-codex-env-sync upload
-codex-env-sync download
-codex-env-sync check
-```
-
-Useful flags:
+## CLI
 
 ```bash
 codex-env-sync upload --dry-run
 codex-env-sync download --dry-run
-codex-env-sync upload --repo /path/to/codex-env-sync --codex-home ~/.codex
 codex-env-sync upload --repo-url https://github.com/owner/repo.git --github-token TOKEN
 codex-env-sync download --repo-url https://github.com/owner/repo.git --github-token TOKEN
 ```
 
-## Windows: Export Settings
-
-Preview first:
-
-```powershell
-.\scripts\windows\export-codex-settings.ps1 -DryRun
-```
-
-Export:
-
-```powershell
-.\scripts\windows\export-codex-settings.ps1
-.\scripts\windows\check-codex-sync-safety.ps1
-git add synced
-git commit -m "sync codex settings"
-git push
-```
-
-## Windows: Install Settings
-
-Preview first:
-
-```powershell
-.\scripts\windows\install-codex-settings.ps1 -DryRun
-```
-
-Install:
-
-```powershell
-.\scripts\windows\install-codex-settings.ps1
-codex login
-```
-
-## macOS: Install Settings
-
-Preview first:
-
-```bash
-DRY_RUN=1 ./scripts/macos/install-codex-settings.sh
-```
-
-Install:
-
-```bash
-./scripts/macos/install-codex-settings.sh
-codex login
-```
-
-## Custom Codex Home
-
-If your Codex home is not `~/.codex`, set `CODEX_HOME`.
-
-Windows:
-
-```powershell
-$env:CODEX_HOME = "D:\codex-home"
-.\scripts\windows\export-codex-settings.ps1
-```
-
-macOS:
-
-```bash
-CODEX_HOME="$HOME/.codex-work" ./scripts/macos/install-codex-settings.sh
-```
-
 ## Safety Model
 
-The scripts use an allowlist approach. They copy only `skills`, `prompts`, and sanitized `config.toml`.
+The implementation uses an allowlist. It copies only `skills`, `prompts`, and sanitized `config.toml`.
 
-`config.toml` export blocks account-like keys such as `api_key`, `token`, `secret`, `password`, and `credential`.
-
-Install scripts back up existing synced targets before replacing them:
+Installing remote settings backs up existing local targets first:
 
 - `~/.codex/skills.backup`
 - `~/.codex/prompts.backup`
 - `~/.codex/config.toml.backup`
 
-Account files such as `auth.json` are not touched. Each machine should run `codex login` independently.
-
-The desktop app can run without local Git when GitHub API mode is used, but Codex itself still needs to be installed separately on each machine.
+Each machine should still run `codex login` independently.
 
 ## Tests
-
-Run:
 
 ```powershell
 .\tests\run.ps1
 npm test
 ```
-
-The tests verify export behavior, install backups, auth preservation, safety checks, shared Node core behavior, and shell syntax when Bash is available.
 
 ## License
 

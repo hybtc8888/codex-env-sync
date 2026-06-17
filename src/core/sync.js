@@ -24,6 +24,8 @@ const EXCLUDED_FILE_EXTENSIONS = new Set([".pyc", ".pyo", ".log", ".tmp"]);
 const FORBIDDEN_NAME_PATTERN = /(token|session|credential|secret)/i;
 const SECRET_VALUE_PATTERN = /(sk-[a-z0-9_-]{20,}|xox[baprs]-[a-z0-9-]{20,}|gh[pousr]_[a-z0-9_]{20,})/i;
 const UNSAFE_CONFIG_KEY_PATTERN = /^\s*([A-Za-z0-9_.-]*(api[_-]?key|token|secret|password|credential)[A-Za-z0-9_.-]*)\s*=/i;
+const SOURCE_REPOSITORY_NAME = "codex-env-sync";
+const DEFAULT_SYNC_REPOSITORY_NAME = "codex-env-sync-data";
 
 function getDefaultCodexHome() {
   return process.env.CODEX_HOME || path.join(os.homedir(), ".codex");
@@ -54,6 +56,25 @@ function parseGitHubRepo(repoUrl = "") {
   }
 
   throw new Error("Use a GitHub repository URL such as https://github.com/owner/repo.git.");
+}
+
+function checkSyncRepositoryUrl(repoUrl) {
+  if (!repoUrl) {
+    return { ok: true };
+  }
+
+  const { repo } = parseGitHubRepo(repoUrl);
+  if (repo.toLowerCase() === SOURCE_REPOSITORY_NAME) {
+    return {
+      ok: false,
+      event: {
+        level: "error",
+        message: `The repository ${SOURCE_REPOSITORY_NAME} is the source code repository. Use a private ${DEFAULT_SYNC_REPOSITORY_NAME} repository for synced data.`,
+      },
+    };
+  }
+
+  return { ok: true };
 }
 
 function ensureDir(dirPath) {
@@ -213,6 +234,12 @@ function copyText(destination, content) {
   fs.writeFileSync(destination, content, "utf8");
 }
 
+function emitProgress(options, progress) {
+  if (typeof options.onProgress === "function") {
+    options.onProgress(progress);
+  }
+}
+
 async function checkSyncSafety(options = {}) {
   const { repoRoot } = getDefaultState(options);
   const violations = [];
@@ -251,6 +278,7 @@ async function checkSyncSafety(options = {}) {
 
 async function exportCodexSettings(options = {}) {
   const state = getDefaultState(options);
+  emitProgress(options, { kind: "upload", phase: "export", message: "Exporting safe Codex settings." });
   const events = [
     {
       level: "info",
@@ -287,6 +315,8 @@ async function exportCodexSettings(options = {}) {
   const safety = await checkSyncSafety({ repoRoot: state.repoRoot });
   events.push(...safety.events);
   events.push({ level: safety.ok ? "success" : "error", message: safety.ok ? "Export complete." : "Export blocked." });
+  const exportedFiles = listLocalSyncedFiles(state.repoRoot).length;
+  emitProgress(options, { kind: "upload", phase: "export", current: exportedFiles, total: exportedFiles, message: "Exported safe Codex settings." });
 
   return { ok: safety.ok, events, state };
 }
@@ -449,8 +479,10 @@ async function uploadSyncedViaGitHub(options = {}) {
   const remoteTree = await githubRequest(options, `/repos/${owner}/${repo}/git/trees/${headCommit.tree.sha}?recursive=1`);
   const localFiles = listLocalSyncedFiles(state.repoRoot);
   const localPaths = new Set(localFiles.map((file) => file.githubPath));
+  emitProgress(options, { kind: "upload", phase: "upload", current: 0, total: localFiles.length, message: "Uploading files to GitHub." });
 
   const tree = [];
+  let uploadedCount = 0;
   for (const file of localFiles) {
     const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs`, {
       method: "POST",
@@ -460,8 +492,18 @@ async function uploadSyncedViaGitHub(options = {}) {
       }),
     });
     tree.push({ path: file.githubPath, mode: "100644", type: "blob", sha: blob.sha });
+    uploadedCount += 1;
+    emitProgress(options, {
+      kind: "upload",
+      phase: "upload",
+      current: uploadedCount,
+      total: localFiles.length,
+      file: file.githubPath,
+      message: "Uploading files to GitHub.",
+    });
   }
 
+  emitProgress(options, { kind: "upload", phase: "commit", current: uploadedCount, total: localFiles.length, message: "Finalizing GitHub commit." });
   for (const item of remoteTree.tree || []) {
     if (item.type === "blob" && item.path.startsWith("synced/") && !localPaths.has(item.path)) {
       tree.push({ path: item.path, mode: "100644", type: "blob", sha: null });
@@ -485,6 +527,7 @@ async function uploadSyncedViaGitHub(options = {}) {
     body: JSON.stringify({ sha: commit.sha }),
   });
 
+  emitProgress(options, { kind: "upload", phase: "complete", current: localFiles.length, total: localFiles.length, message: "Upload complete." });
   events.push({ level: "success", message: `Uploaded synced settings to ${owner}/${repo}@${branch} without requiring local Git.` });
   return { ok: true, events, state };
 }
@@ -499,6 +542,8 @@ async function downloadSyncedViaGitHub(options = {}) {
   const ref = await githubRequest(options, `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
   const headCommit = await githubRequest(options, `/repos/${owner}/${repo}/git/commits/${ref.object.sha}`);
   const remoteTree = await githubRequest(options, `/repos/${owner}/${repo}/git/trees/${headCommit.tree.sha}?recursive=1`);
+  const syncedFiles = (remoteTree.tree || []).filter((item) => item.type === "blob" && item.path.startsWith("synced/") && !item.path.endsWith(".gitkeep"));
+  emitProgress(options, { kind: "download", phase: "download", current: 0, total: syncedFiles.length, message: "Downloading files from GitHub." });
 
   removeIfExists(syncedRoot);
   ensureDir(path.join(syncedRoot, "config"));
@@ -508,14 +553,22 @@ async function downloadSyncedViaGitHub(options = {}) {
   copyText(path.join(syncedRoot, "skills", ".gitkeep"), "");
   copyText(path.join(syncedRoot, "prompts", ".gitkeep"), "");
 
-  for (const item of remoteTree.tree || []) {
-    if (item.type !== "blob" || !item.path.startsWith("synced/") || item.path.endsWith(".gitkeep")) {
-      continue;
-    }
+  let downloadedCount = 0;
+  for (const item of syncedFiles) {
     const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs/${item.sha}`);
     copyFileFromBuffer(path.join(state.repoRoot, item.path), Buffer.from(blob.content.replace(/\s/g, ""), "base64"));
+    downloadedCount += 1;
+    emitProgress(options, {
+      kind: "download",
+      phase: "download",
+      current: downloadedCount,
+      total: syncedFiles.length,
+      file: item.path,
+      message: "Downloading files from GitHub.",
+    });
   }
 
+  emitProgress(options, { kind: "download", phase: "complete", current: syncedFiles.length, total: syncedFiles.length, message: "Download complete." });
   events.push({ level: "success", message: `Downloaded synced settings from ${owner}/${repo}@${branch} without requiring local Git.` });
   return { ok: true, events, state };
 }
@@ -634,6 +687,11 @@ async function configureRepository(options = {}) {
 async function uploadSettings(options = {}) {
   const state = getDefaultState(options);
   const events = [];
+  const repositoryCheck = checkSyncRepositoryUrl(options.repoUrl);
+  if (!repositoryCheck.ok) {
+    return { ok: false, events: [repositoryCheck.event], state };
+  }
+
   if (options.githubToken && options.repoUrl) {
     const exported = await exportCodexSettings(options);
     events.push(...exported.events);
@@ -689,6 +747,11 @@ async function uploadSettings(options = {}) {
 async function downloadSettings(options = {}) {
   const state = getDefaultState(options);
   const events = [];
+  const repositoryCheck = checkSyncRepositoryUrl(options.repoUrl);
+  if (!repositoryCheck.ok) {
+    return { ok: false, events: [repositoryCheck.event], state };
+  }
+
   if (options.githubToken && options.repoUrl) {
     if (options.dryRun) {
       events.push({ level: "info", message: "Dry run: skipped GitHub API download." });
@@ -731,6 +794,7 @@ module.exports = {
   getDefaultCodexHome,
   getDefaultState,
   installCodexSettings,
+  checkSyncRepositoryUrl,
   parseGitHubRepo,
   uploadSyncedViaGitHub,
   uploadSettings,

@@ -1,6 +1,6 @@
 {
   "name": "@hybtc8888/codex-env-sync",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Safely sync Codex settings between Windows and macOS without syncing account auth.",
   "license": "MIT",
   "author": "hybtc8888 <hybtc8888@gmail.com>",
@@ -16,7 +16,7 @@
   "scripts": {
     "start": "electron .",
     "check": "node src/cli.js check",
-    "test": "node --test tests/core.test.js tests/i18n.test.js",
+    "test": "node --test tests/core.test.js tests/i18n.test.js tests/github-auth.test.js",
     "package:win": "electron-builder --win portable --publish never",
     "package:mac": "electron-builder --mac dmg zip --x64 --arm64 --publish never",
     "package:all": "electron-builder --win portable --mac dmg zip --x64 --arm64 --publish never"
@@ -24,7 +24,6 @@
   "files": [
     "src",
     "scripts",
-    "synced",
     "examples",
     "README.md",
     "README.zh-CN.md",
@@ -46,7 +45,6 @@
     "files": [
       "src/**/*",
       "package.json",
-      "synced/**/*",
       "examples/**/*",
       "README.md",
       "README.zh-CN.md",

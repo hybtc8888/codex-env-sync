@@ -18,7 +18,7 @@
           <span class="status-dot" id="status-dot"></span>
           <div>
             <strong id="status-title" data-i18n="status.ready.title">Ready</strong>
-            <p id="status-copy" data-i18n="status.ready.copy">Choose upload or download after checking paths.</p>
+            <p id="status-copy" data-i18n="status.ready.copy">Connect GitHub, then upload or download.</p>
           </div>
         </div>
       </section>
@@ -32,59 +32,96 @@
               <option value="zh-CN">中文</option>
             </select>
           </label>
+
+          <section class="connect-panel" aria-labelledby="connect-title">
+            <div>
+              <h2 id="connect-title" data-i18n="connect.title">GitHub connection</h2>
+              <p data-i18n="connect.copy">Authorize once so this app can read and write only the synced settings repository. This removes local Git setup and makes PC/Mac sync one-click.</p>
+            </div>
+            <button class="connect-button" id="connect-github-button" type="button">
+              <span data-i18n="actions.connect.title">Connect GitHub</span>
+              <small data-i18n="actions.connect.copy">Open GitHub and authorize Codex Env Sync</small>
+            </button>
+          </section>
+
+          <div class="auth-code-panel" aria-live="polite">
+            <span data-i18n="auth.code.label">GitHub code</span>
+            <strong id="github-user-code" data-i18n="auth.code.empty">No code yet</strong>
+            <small id="github-auth-copy" data-i18n="auth.code.idle">Click Connect GitHub to start authorization.</small>
+          </div>
+
           <label>
             <span data-i18n="labels.repoUrl">GitHub repository URL</span>
-            <input id="repo-url" name="repoUrl" type="url" inputmode="url" autocomplete="off" data-i18n-placeholder="placeholders.repoUrl" placeholder="https://github.com/you/codex-env-sync.git..." />
+            <input id="repo-url" name="repoUrl" type="url" inputmode="url" autocomplete="off" data-i18n-placeholder="placeholders.repoUrl" placeholder="https://github.com/you/codex-env-sync-data.git" />
           </label>
-          <label>
-            <span data-i18n="labels.githubToken">GitHub token</span>
-            <input id="github-token" name="githubToken" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.githubToken" placeholder="Optional: enables sync without local Git..." />
-          </label>
-          <div class="two-up">
+
+          <details class="advanced-panel">
+            <summary data-i18n="advanced.title">Advanced settings</summary>
             <label>
-              <span data-i18n="labels.gitName">Git name</span>
-              <input id="git-name" name="gitName" autocomplete="off" data-i18n-placeholder="placeholders.gitName" placeholder="Your Git name..." />
+              <span data-i18n="labels.githubToken">GitHub token</span>
+              <input id="github-token" name="githubToken" type="password" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.githubToken" placeholder="Filled automatically after GitHub connection..." />
+            </label>
+            <div class="two-up">
+              <label>
+                <span data-i18n="labels.gitName">Git name</span>
+                <input id="git-name" name="gitName" autocomplete="off" data-i18n-placeholder="placeholders.gitName" placeholder="Filled automatically..." />
+              </label>
+              <label>
+                <span data-i18n="labels.gitEmail">Git email</span>
+                <input id="git-email" name="gitEmail" type="email" inputmode="email" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.gitEmail" placeholder="Filled automatically..." />
+              </label>
+            </div>
+            <label>
+              <span data-i18n="labels.repoRoot">Repository folder</span>
+              <input id="repo-root" name="repoRoot" autocomplete="off" />
             </label>
             <label>
-              <span data-i18n="labels.gitEmail">Git email</span>
-              <input id="git-email" name="gitEmail" type="email" inputmode="email" autocomplete="off" spellcheck="false" data-i18n-placeholder="placeholders.gitEmail" placeholder="you@example.com..." />
+              <span data-i18n="labels.codexHome">Codex home</span>
+              <input id="codex-home" name="codexHome" autocomplete="off" />
             </label>
-          </div>
-          <label>
-            <span data-i18n="labels.repoRoot">Repository folder</span>
-            <input id="repo-root" name="repoRoot" autocomplete="off" />
-          </label>
-          <label>
-            <span data-i18n="labels.codexHome">Codex home</span>
-            <input id="codex-home" name="codexHome" autocomplete="off" />
-          </label>
-          <label>
-            <span data-i18n="labels.message">Commit message</span>
-            <input id="commit-message" name="message" value="sync codex settings" autocomplete="off" />
-          </label>
-          <label class="toggle-line">
-            <input id="dry-run" type="checkbox" />
-            <span data-i18n="labels.preview">Preview only</span>
-          </label>
+            <label>
+              <span data-i18n="labels.message">Commit message</span>
+              <input id="commit-message" name="message" value="sync codex settings" autocomplete="off" />
+            </label>
+            <label class="toggle-line">
+              <input id="dry-run" type="checkbox" />
+              <span data-i18n="labels.preview">Preview only</span>
+            </label>
+          </details>
         </form>
 
-        <section class="action-board" aria-label="Sync actions">
-          <button class="action setup" id="setup-button" type="button">
-            <span data-i18n="actions.setup.title">Setup</span>
-            <small data-i18n="actions.setup.copy">Bind repo and local Git identity</small>
-          </button>
-          <button class="action upload" id="upload-button" type="button">
-            <span data-i18n="actions.upload.title">Upload</span>
-            <small data-i18n="actions.upload.copy">Export safe settings, commit, push</small>
-          </button>
-          <button class="action download" id="download-button" type="button">
-            <span data-i18n="actions.download.title">Download</span>
-            <small data-i18n="actions.download.copy">Pull remote settings, install locally</small>
-          </button>
-          <button class="action check" id="check-button" type="button">
-            <span data-i18n="actions.check.title">Check Safety</span>
-            <small data-i18n="actions.check.copy">Scan before sharing or installing</small>
-          </button>
+        <section class="action-board" aria-labelledby="sync-title">
+          <div class="sync-head">
+            <h2 id="sync-title" data-i18n="sync.title">Sync controls</h2>
+            <p data-i18n="sync.copy">Use Upload on the machine with the newest settings, then Download on the other machine.</p>
+          </div>
+          <div class="sync-actions">
+            <button class="action upload" id="upload-button" type="button">
+              <span data-i18n="actions.upload.title">Upload</span>
+              <small data-i18n="actions.upload.copy">Check safety, export settings, then upload</small>
+            </button>
+            <button class="action download" id="download-button" type="button">
+              <span data-i18n="actions.download.title">Download</span>
+              <small data-i18n="actions.download.copy">Download remote settings and install locally</small>
+            </button>
+          </div>
+          <div class="progress-panel" id="progress-panel" aria-live="polite">
+            <div class="progress-row">
+              <span data-i18n="progress.current">Current</span>
+              <strong id="progress-current" data-i18n="progress.idle">Waiting for an operation</strong>
+            </div>
+            <div class="progress-row">
+              <span data-i18n="progress.elapsed">Elapsed</span>
+              <strong id="progress-elapsed">00:00</strong>
+            </div>
+            <div class="progress-row">
+              <span data-i18n="progress.files">Files</span>
+              <strong id="progress-files">0 / 0</strong>
+            </div>
+            <div class="progress-bar" aria-hidden="true">
+              <span id="progress-bar-fill"></span>
+            </div>
+          </div>
         </section>
       </section>
 
@@ -96,6 +133,43 @@
         <ol id="log-list"></ol>
       </section>
     </main>
+    <dialog class="auth-dialog" id="auth-dialog" aria-labelledby="auth-dialog-title">
+      <div class="auth-dialog-body">
+        <p class="eyebrow" data-i18n="auth.dialog.eyebrow">GitHub authorization</p>
+        <h2 id="auth-dialog-title" data-i18n="auth.dialog.title">Enter this code in GitHub</h2>
+        <strong class="auth-dialog-code" id="auth-dialog-code">----</strong>
+        <p id="auth-dialog-copy" data-i18n="auth.dialog.copy">The browser is open. Type this code on the GitHub page, then return here.</p>
+        <div class="auth-dialog-actions">
+          <button class="secondary-button" id="copy-auth-code-button" type="button" data-i18n="auth.dialog.copyButton">Copy code</button>
+          <button class="secondary-button" id="close-auth-dialog-button" type="button" data-i18n="auth.dialog.cancel">Cancel and retry</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog class="success-dialog" id="upload-success-dialog" aria-labelledby="upload-success-title">
+      <div class="success-dialog-body">
+        <p class="eyebrow" data-i18n="upload.dialog.eyebrow">Upload complete</p>
+        <h2 id="upload-success-title" data-i18n="upload.dialog.title">Congratulations, your Codex settings are synced.</h2>
+        <p data-i18n="upload.dialog.copy">You can now install this app on another computer, connect GitHub, and click Download to restore the same settings there.</p>
+        <div class="success-dialog-actions">
+          <a class="primary-link-button" id="github-project-link" href="https://github.com/hybtc8888/codex-env-sync" target="_blank" rel="noreferrer" data-i18n="upload.dialog.githubButton">Star this project on GitHub</a>
+          <button class="secondary-button" id="close-upload-success-button" type="button" data-i18n="upload.dialog.close">Done</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog class="complete-dialog" id="complete-dialog" aria-labelledby="complete-dialog-title">
+      <div class="complete-dialog-body">
+        <div class="thumb-frame" aria-hidden="true">
+          <span>👍</span>
+        </div>
+        <p class="eyebrow" id="complete-dialog-eyebrow">Sync complete</p>
+        <h2 id="complete-dialog-title">Nicely done</h2>
+        <p id="complete-dialog-copy">The operation completed successfully.</p>
+        <div class="complete-dialog-actions">
+          <button class="secondary-button" id="star-github-button" type="button" data-i18n="complete.star">Open GitHub to star</button>
+          <button class="secondary-button" id="close-complete-dialog-button" type="button" data-i18n="complete.close">Close</button>
+        </div>
+      </div>
+    </dialog>
     <script src="./i18n.js"></script>
     <script src="./app.js"></script>
   </body>
