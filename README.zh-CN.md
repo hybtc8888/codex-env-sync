@@ -1,40 +1,45 @@
 # Codex Env Sync
 
-在 Windows 和 macOS 之间同步你的 Codex 设置，同时不复制登录、session、token 或本机状态。
+几分钟内同步你的 Windows PC 和 Mac 上的 Codex 设置，同时不复制登录、session、token 或本机状态。
 
 [English README](README.md)
 
+## 先下载哪个版本
+
+从 [Releases](https://github.com/hybtc8888/codex-env-sync/releases/tag/v0.4.4) 下载最新版。
+
+| 你的设备 | 下载这个文件 |
+| --- | --- |
+| 大多数 Intel / AMD Windows 电脑 | `Codex.Env.Sync.*-x64.exe` |
+| Windows on ARM 设备，比如 Snapdragon 笔记本 | `Codex.Env.Sync.*-arm64.exe` |
+| Apple Silicon Mac，比如 M1/M2/M3/M4 MacBook、Mac mini、iMac | `Codex.Env.Sync-*-arm64.dmg` |
+| 较老的 Intel Mac | `Codex.Env.Sync-*.dmg` |
+
+不确定 Windows 版本时，优先选 **x64**。不确定现代 MacBook 版本时，优先选 **macOS arm64**。
+
 ## 为什么需要它
 
-Codex 越用越顺手，往往不是因为某一个设置，而是因为你的 skills、prompts、默认配置和工作习惯慢慢沉淀下来了。换一台电脑、换一个账号、在 PC 和 MacBook 之间来回用时，最烦的事情就是重新整理这些配置。
+Codex 越用越顺手，往往不是因为某一个设置，而是因为你的 skills、prompts、默认配置和工作习惯慢慢沉淀下来了。换一台电脑、换一个账号、在 PC 和 MacBook 之间来回用时，最烦的事情不该是翻隐藏目录、猜哪些文件能复制、再手动重建一遍工作流。
 
-Codex Env Sync 把这件事变成一个很短的流程：
+Codex Env Sync 把你的本地 Codex 环境变成一套可以随身走、但不带走账号的工具箱：
 
 - 连接一次 GitHub。
 - 在已有配置的机器上上传。
 - 在另一台机器上下载。
 - 每台设备继续使用自己的 Codex 登录账号。
 
-它追求的是“云同步一样方便，本地工具一样克制”。
+它拿到了云同步最舒服的部分，同时把危险的账号凭据、session、token 全部挡在同步路径之外。设置跟你走，账号留本机。
 
-## 好用在哪里
+## 为什么它很爽
 
-- **普通用户一键用**：不需要安装 Node.js、npm、Electron、Git 或构建工具。
-- **PC 和 Mac 都能同步**：Windows 到 macOS、macOS 到 Windows、两台 Mac 之间都可以。
-- **默认使用私有仓库**：自动创建或选择 `codex-env-sync-data` 私有仓库保存同步数据。
-- **不会搬走账号**：Codex 登录文件、token、session、历史记录、缓存和本机状态都会被拦截。
-- **GitHub App 授权**：不用手动复制很长的 GitHub Token。
-- **过程看得见**：上传和下载会显示步骤、已用时间和文件计数。
-- **中英文界面和文档**：适合自己用，也适合开源分享。
-
-## 下载
-
-从 [Releases](https://github.com/hybtc8888/codex-env-sync/releases) 下载最新版。
-
-- Windows x64：适合大多数 Windows 电脑
-- Windows arm64：适合 Windows on ARM 设备
-- macOS arm64：适合 Apple Silicon Mac
-- macOS x64：适合 Intel Mac
+- **它是真正的桌面 App，不是一堆脚本**：点击、授权、上传、下载。普通用户不需要安装 Git、Node.js、npm、Electron 或任何构建工具。
+- **跨平台就是它的主场**：Windows 到 macOS、macOS 到 Windows、Mac 到 Mac、PC 到 PC 都可以。你的设置不再被某一台机器绑住。
+- **默认放进你的私有 GitHub 仓库**：自动创建或选择 `codex-env-sync-data` 私有仓库，数据在你自己的 GitHub 账号里。
+- **从设计上隔离账号**：Codex 登录文件、token、session、历史记录、缓存和本机状态都会在进入 GitHub 前被拦截。
+- **GitHub App 授权**：不需要让普通用户手动复制又长又吓人的 GitHub Token。
+- **同步过程看得见**：上传和下载会显示步骤、已用时间、文件计数、重试提示和完成弹窗。
+- **专为两台电脑来回切换的人设计**：哪台机器配置最新，就在哪台上传；另一台下载后继续干活。
+- **中英文界面和文档**：自己用顺手，开源分享也体面。
 
 ## 快速开始
 
