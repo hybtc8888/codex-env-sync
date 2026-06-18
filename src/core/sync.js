@@ -2,6 +2,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
+const { retryTransient } = require("./network-retry");
 
 const EXCLUDED_DIRECTORIES = new Set([
   ".git",
@@ -449,26 +450,47 @@ async function githubRequest(options, apiPath, init = {}) {
     throw new Error("GitHub token is required for dependency-free GitHub API sync.");
   }
 
-  const response = await (options.fetch || fetch)(`https://api.github.com${apiPath}`, {
-    ...init,
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(init.headers || {}),
-    },
-  });
+  const request = async () => {
+    const response = await (options.fetch || fetch)(`https://api.github.com${apiPath}`, {
+      ...init,
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        ...(init.headers || {}),
+      },
+    });
 
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
-  if (!response.ok) {
-    throw new Error(data.message || `GitHub API request failed: ${response.status}`);
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+    if (!response.ok) {
+      const error = new Error(data.message || `GitHub API request failed: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  };
+
+  if (String(init.method || "GET").toUpperCase() !== "GET") {
+    return request();
   }
-  return data;
+
+  return retryTransient(request, {
+    maxRetries: 3,
+    onRetry: ({ retry, maxRetries }) =>
+      emitProgress(options, {
+        kind: options.syncKind || "sync",
+        phase: "retry",
+        retry,
+        maxRetries,
+        message: `GitHub connection interrupted. Retrying request (${retry}/${maxRetries}).`,
+      }),
+  });
 }
 
 async function uploadSyncedViaGitHub(options = {}) {
+  options = { ...options, syncKind: "upload" };
   const state = getDefaultState(options);
   const { owner, repo } = parseGitHubRepo(options.repoUrl);
   const branch = options.branch || state.branch;
@@ -533,6 +555,7 @@ async function uploadSyncedViaGitHub(options = {}) {
 }
 
 async function downloadSyncedViaGitHub(options = {}) {
+  options = { ...options, syncKind: "download" };
   const state = getDefaultState(options);
   const { owner, repo } = parseGitHubRepo(options.repoUrl);
   const branch = options.branch || state.branch;

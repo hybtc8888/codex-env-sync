@@ -29,3 +29,11 @@ test("every English key exists in Chinese dictionary", () => {
 
   assert.deepEqual(missing, []);
 });
+
+test("createTranslator localizes transient GitHub retry messages", () => {
+  const en = createTranslator("en");
+  const zh = createTranslator("zh-CN");
+
+  assert.equal(en("log.retry", { retry: "2", maxRetries: "3" }), "GitHub connection interrupted. Retrying (2/3).");
+  assert.equal(zh("log.retry", { retry: "2", maxRetries: "3" }), "GitHub 连接暂时中断，正在重试（2/3）。");
+});

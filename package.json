@@ -16,7 +16,7 @@
   "scripts": {
     "start": "electron .",
     "check": "node src/cli.js check",
-    "test": "node --test tests/core.test.js tests/i18n.test.js tests/github-auth.test.js",
+    "test": "node --test tests/core.test.js tests/i18n.test.js tests/github-auth.test.js tests/resilience.test.js",
     "package:win": "electron-builder --win portable --x64 --publish never",
     "package:win:x64": "electron-builder --win portable --x64 --publish never",
     "package:win:arm64": "electron-builder --win portable --arm64 --publish never",

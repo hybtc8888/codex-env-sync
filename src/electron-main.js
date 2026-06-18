@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, powerSaveBlocker, shell } = require("electron");
 const path = require("node:path");
 const os = require("node:os");
 const {
@@ -19,6 +19,7 @@ const {
   getDefaultState,
   uploadSettings,
 } = require("./core/sync");
+const { runWithPowerSaveBlocker } = require("./core/power-save");
 
 const authSessions = new Map();
 
@@ -65,16 +66,20 @@ ipcMain.handle("state:get-default", () => getDefaultState({ repoRoot: path.join(
 ipcMain.handle("sync:check", (_event, options) => checkSyncSafety(options));
 ipcMain.handle("sync:setup", (_event, options) => configureRepository(options));
 ipcMain.handle("sync:upload", (event, options) =>
-  uploadSettings({
-    ...options,
-    onProgress: (progress) => event.sender.send("sync:progress", progress),
-  })
+  runWithPowerSaveBlocker(powerSaveBlocker, () =>
+    uploadSettings({
+      ...options,
+      onProgress: (progress) => event.sender.send("sync:progress", progress),
+    })
+  )
 );
 ipcMain.handle("sync:download", (event, options) =>
-  downloadSettings({
-    ...options,
-    onProgress: (progress) => event.sender.send("sync:progress", progress),
-  })
+  runWithPowerSaveBlocker(powerSaveBlocker, () =>
+    downloadSettings({
+      ...options,
+      onProgress: (progress) => event.sender.send("sync:progress", progress),
+    })
+  )
 );
 ipcMain.handle("shell:open-external", (_event, url) => shell.openExternal(url));
 

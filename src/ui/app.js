@@ -260,6 +260,16 @@ function progressLabel(progress = {}) {
 }
 
 function updateProgress(progress = {}) {
+  if (progress.phase === "retry") {
+    const replacements = {
+      retry: String(progress.retry || 1),
+      maxRetries: String(progress.maxRetries || 3),
+    };
+    progressCurrent.textContent = t("progress.retry", replacements);
+    addEvents([{ level: "info", message: t("log.retry", replacements) }]);
+    return;
+  }
+
   progressCurrent.textContent = progressLabel(progress);
   const total = Number(progress.total || 0);
   const current = Number(progress.current || 0);
