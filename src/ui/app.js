@@ -345,7 +345,11 @@ async function cancelAuthFlow() {
     closeAuthDialog();
     return;
   }
-  await window.codexSync.cancelGitHubAuth({ sessionId: currentAuthSessionId });
+  try {
+    await window.codexSync.cancelGitHubAuth({ sessionId: currentAuthSessionId });
+  } catch (_err) {
+    // session may already be dead; safe to ignore
+  }
   currentAuthSessionId = "";
   githubAuthCopy.textContent = t("auth.code.cancelled");
   authDialogCopy.textContent = t("auth.dialog.cancelled");
@@ -451,6 +455,9 @@ async function connectGitHub() {
     }
     setStatus(completed.ok ? "success" : "error", completed.ok ? t("state.complete", { label }) : t("state.blocked", { label }), completed.ok ? t("status.complete.copy") : t("status.blocked.copy"));
   } catch (error) {
+    currentAuthSessionId = "";
+    authFinished = true;
+    closeAuthDialog();
     const isCancelled = String(error.message || error).includes("cancelled");
     addEvents([{ level: isCancelled ? "info" : "error", message: isCancelled ? t("log.authCancelled") : error.stack || error.message }]);
     githubAuthCopy.textContent = isCancelled ? t("auth.code.cancelled") : t("auth.code.failed");

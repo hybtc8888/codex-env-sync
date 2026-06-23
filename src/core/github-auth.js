@@ -1,4 +1,5 @@
-﻿const DEFAULT_GITHUB_APP_CLIENT_ID = "Iv23liWtNhmzmTmFFNJO";
+const DEFAULT_GITHUB_APP_CLIENT_ID = "Iv23liWtNhmzmTmFFNJO";
+const { retryTransient } = require("./network-retry");
 const GITHUB_APP_PUBLIC_URL = "https://github.com/apps/codex-env-sync";
 const GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code";
 const GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token";
@@ -127,7 +128,19 @@ async function waitForDeviceAuthorization(options = {}) {
     if (options.shouldCancel && options.shouldCancel()) {
       throw new Error("GitHub authorization was cancelled.");
     }
-    const result = await exchangeDeviceCode({ ...options, interval });
+
+    let result;
+    try {
+      result = await retryTransient(() => exchangeDeviceCode({ ...options, interval }));
+    } catch (error) {
+      if (/TypeError.*fetch failed/i.test(String(error.message || error))) {
+        throw new Error(
+          "Cannot reach GitHub to complete authorization. Check your network connection and try again. If the problem continues, retry later."
+        );
+      }
+      throw error;
+    }
+
     if (result.accessToken) {
       return result;
     }
