@@ -148,10 +148,18 @@ function localizeEventMessage(message) {
   if (match) return t("log.uploaded", { target: match[1] });
   match = text.match(/^Downloaded synced settings from (.+) without requiring local Git\.$/);
   if (match) return t("log.downloaded", { target: match[1] });
+  match = text.match(/^Merge directory: (.+) -> (.+)$/);
+  if (match) return t("log.mergeDirectory", { from: match[1], to: match[2] });
+  match = text.match(/^Install item: (.+) -> (.+)$/);
+  if (match) return t("log.installItem", { from: match[1], to: match[2] });
   match = text.match(/^Install directory: (.+) -> (.+)$/);
   if (match) return t("log.installDirectory", { from: match[1], to: match[2] });
   match = text.match(/^Install file: (.+) -> (.+)$/);
   if (match) return t("log.installFile", { from: match[1], to: match[2] });
+  match = text.match(/^Skip unchanged item: (.+)$/);
+  if (match) return t("log.skipUnchangedItem", { item: match[1] });
+  match = text.match(/^Preserve local (.+); saved remote conflict to (.+)$/);
+  if (match) return t("log.remoteConflict", { item: match[1], path: match[2] });
   match = text.match(/^Backup: (.+) -> (.+)$/);
   if (match) return t("log.backup", { from: match[1], to: match[2] });
   if (text.startsWith("The GitHub App is installed only on the source repository.")) {

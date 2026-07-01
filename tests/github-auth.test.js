@@ -220,10 +220,27 @@ test("createPrivateSyncRepository creates a private initialized repository", asy
 test("selectPreferredRepository picks codex-env-sync-data when available", () => {
   const result = selectPreferredRepository([
     { fullName: "octocat/codex-env-sync" },
-    { fullName: "octocat/codex-env-sync-data" },
+    { fullName: "octocat/codex-env-sync-data", private: true },
   ]);
 
   assert.equal(result.fullName, "octocat/codex-env-sync-data");
+});
+
+test("selectPreferredRepository ignores arbitrary non-source repositories", () => {
+  const result = selectPreferredRepository([
+    { fullName: "octocat/notes", private: true },
+    { fullName: "octocat/dotfiles", private: true },
+  ]);
+
+  assert.equal(result, null);
+});
+
+test("selectPreferredRepository requires the default sync repository to be private", () => {
+  const result = selectPreferredRepository([
+    { fullName: "octocat/codex-env-sync-data", private: false },
+  ]);
+
+  assert.equal(result, null);
 });
 
 test("selectPreferredRepository refuses the source repository by itself", () => {

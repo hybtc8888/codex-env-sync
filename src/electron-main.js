@@ -20,6 +20,7 @@ const {
   uploadSettings,
 } = require("./core/sync");
 const { runWithPowerSaveBlocker } = require("./core/power-save");
+const { isAllowedExternalUrl } = require("./core/external-url");
 
 const authSessions = new Map();
 
@@ -81,7 +82,12 @@ ipcMain.handle("sync:download", (event, options) =>
     })
   )
 );
-ipcMain.handle("shell:open-external", (_event, url) => shell.openExternal(url));
+ipcMain.handle("shell:open-external", (_event, url) => {
+  if (!isAllowedExternalUrl(url)) {
+    throw new Error("External URL is not allowed.");
+  }
+  return shell.openExternal(url);
+});
 
 ipcMain.handle("github-auth:start", async (_event, options = {}) => {
   const device = await requestDeviceCode({ clientId: options.clientId });

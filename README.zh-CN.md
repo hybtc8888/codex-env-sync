@@ -6,12 +6,12 @@
 
 ## 先下载哪个版本
 
-从 [Releases](https://github.com/hybtc8888/codex-env-sync/releases/tag/v0.4.4) 下载最新版。
+从 [Releases](https://github.com/hybtc8888/codex-env-sync/releases/tag/v0.4.6) 下载最新版。
 
 | 你的设备 | 下载这个文件 |
 | --- | --- |
-| 大多数 Intel / AMD Windows 电脑 | `Codex.Env.Sync.*-x64.exe` |
-| Windows on ARM 设备，比如 Snapdragon 笔记本 | `Codex.Env.Sync.*-arm64.exe` |
+| 大多数 Intel / AMD Windows 电脑 | `Codex.Env.Sync.*-x64.exe` 或 `Codex.Env.Sync.*-x64.zip` |
+| Windows on ARM 设备，比如 Snapdragon 笔记本 | `Codex.Env.Sync.*-arm64.exe` 或 `Codex.Env.Sync.*-arm64.zip` |
 | Apple Silicon Mac，比如 M1/M2/M3/M4 MacBook、Mac mini、iMac | `Codex.Env.Sync-*-arm64.dmg` |
 | 较老的 Intel Mac | `Codex.Env.Sync-*.dmg` |
 

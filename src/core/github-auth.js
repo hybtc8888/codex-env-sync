@@ -259,15 +259,17 @@ function isSourceRepository(repo) {
 }
 
 function selectPreferredRepository(repositories, preferredName = DEFAULT_SYNC_REPOSITORY_NAME) {
-  const preferred = repositories.find((repo) => repo.fullName && repo.fullName.toLowerCase().endsWith(`/${preferredName.toLowerCase()}`));
+  const preferred = repositories.find(
+    (repo) =>
+      repo.fullName &&
+      repo.fullName.toLowerCase().endsWith(`/${preferredName.toLowerCase()}`) &&
+      repo.private === true
+  );
   if (preferred) {
     return preferred;
   }
 
-  return (
-    repositories.find((repo) => !isSourceRepository(repo)) ||
-    null
-  );
+  return null;
 }
 
 module.exports = {
@@ -284,4 +286,3 @@ module.exports = {
   selectPreferredRepository,
   waitForDeviceAuthorization,
 };
-

@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 const { retryTransient } = require("./network-retry");
 
@@ -91,6 +92,11 @@ function removeIfExists(targetPath) {
 function copyFile(source, destination) {
   ensureDir(path.dirname(destination));
   fs.copyFileSync(source, destination);
+}
+
+function copyPath(source, destination) {
+  ensureDir(path.dirname(destination));
+  fs.cpSync(source, destination, { recursive: true, force: true });
 }
 
 function listFiles(root) {
@@ -233,6 +239,146 @@ function sanitizeConfig(source, destination, events, dryRun = false) {
 function copyText(destination, content) {
   ensureDir(path.dirname(destination));
   fs.writeFileSync(destination, content, "utf8");
+}
+
+function hashFile(filePath) {
+  const hash = crypto.createHash("sha256");
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest("hex");
+}
+
+function hashPath(targetPath) {
+  if (!fs.existsSync(targetPath)) {
+    return "";
+  }
+
+  const stat = fs.statSync(targetPath);
+  if (stat.isFile()) {
+    return hashFile(targetPath);
+  }
+
+  const hash = crypto.createHash("sha256");
+  for (const file of listFiles(targetPath).sort()) {
+    const relative = path.relative(targetPath, file).split(path.sep).join("/");
+    hash.update(relative);
+    hash.update("\0");
+    hash.update(hashFile(file));
+    hash.update("\0");
+  }
+  return hash.digest("hex");
+}
+
+function getInstallManifestPath(codexHome) {
+  return path.join(codexHome, ".codex-sync", "manifest.json");
+}
+
+function loadInstallManifest(codexHome) {
+  try {
+    const manifest = JSON.parse(fs.readFileSync(getInstallManifestPath(codexHome), "utf8"));
+    return {
+      version: 1,
+      installed: manifest.installed && typeof manifest.installed === "object" ? manifest.installed : {},
+    };
+  } catch {
+    return { version: 1, installed: {} };
+  }
+}
+
+function saveInstallManifest(codexHome, manifest) {
+  copyText(getInstallManifestPath(codexHome), JSON.stringify(manifest, null, 2) + os.EOL);
+}
+
+function getUniquePath(targetPath) {
+  if (!fs.existsSync(targetPath)) {
+    return targetPath;
+  }
+
+  for (let index = 1; ; index += 1) {
+    const candidate = `${targetPath}-${index}`;
+    if (!fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+}
+
+function replacePath(source, destination, events, dryRun = false) {
+  events.push({ level: "info", message: `Install item: ${source} -> ${destination}` });
+  if (dryRun) {
+    return;
+  }
+
+  const tempDestination = `${destination}.tmp-${process.pid}`;
+  const backupPath = `${destination}.backup`;
+
+  removeIfExists(tempDestination);
+  try {
+    copyPath(source, tempDestination);
+    if (fs.existsSync(destination)) {
+      events.push({ level: "info", message: `Backup: ${destination} -> ${backupPath}` });
+      removeIfExists(backupPath);
+      fs.renameSync(destination, backupPath);
+    }
+    fs.renameSync(tempDestination, destination);
+  } catch (error) {
+    removeIfExists(tempDestination);
+    if (!fs.existsSync(destination) && fs.existsSync(backupPath)) {
+      fs.renameSync(backupPath, destination);
+    }
+    throw error;
+  }
+}
+
+function saveRemoteConflict(source, codexHome, category, itemName, events, dryRun = false) {
+  const conflictRoot = path.join(codexHome, ".codex-sync", "conflicts", category);
+  const conflictPath = getUniquePath(path.join(conflictRoot, `${itemName}.remote-conflict`));
+  events.push({ level: "info", message: `Preserve local ${category}/${itemName}; saved remote conflict to ${conflictPath}` });
+  if (!dryRun) {
+    copyPath(source, conflictPath);
+  }
+}
+
+function installMergedDirectory(source, destination, category, codexHome, manifest, events, dryRun = false) {
+  if (!fs.existsSync(source)) {
+    events.push({ level: "info", message: `Skip missing synced directory: ${source}` });
+    return;
+  }
+
+  events.push({ level: "info", message: `Merge directory: ${source} -> ${destination}` });
+  if (!dryRun) {
+    ensureDir(destination);
+  }
+
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+    if (entry.name === ".gitkeep") {
+      continue;
+    }
+
+    const sourcePath = path.join(source, entry.name);
+    const destinationPath = path.join(destination, entry.name);
+    const key = `${category}/${entry.name}`;
+    const sourceHash = hashPath(sourcePath);
+
+    if (!fs.existsSync(destinationPath)) {
+      replacePath(sourcePath, destinationPath, events, dryRun);
+      manifest.installed[key] = sourceHash;
+      continue;
+    }
+
+    const destinationHash = hashPath(destinationPath);
+    if (destinationHash === sourceHash) {
+      events.push({ level: "info", message: `Skip unchanged item: ${key}` });
+      manifest.installed[key] = sourceHash;
+      continue;
+    }
+
+    if (manifest.installed[key] && destinationHash === manifest.installed[key]) {
+      replacePath(sourcePath, destinationPath, events, dryRun);
+      manifest.installed[key] = sourceHash;
+      continue;
+    }
+
+    saveRemoteConflict(sourcePath, codexHome, category, entry.name, events, dryRun);
+  }
 }
 
 function emitProgress(options, progress) {
@@ -417,13 +563,33 @@ async function installCodexSettings(options = {}) {
   }
 
   const syncedRoot = path.join(state.repoRoot, "synced");
+  const manifest = loadInstallManifest(state.codexHome);
   if (!options.dryRun) {
     ensureDir(state.codexHome);
   }
 
-  installDirectory(path.join(syncedRoot, "skills"), path.join(state.codexHome, "skills"), events, options.dryRun);
-  installDirectory(path.join(syncedRoot, "prompts"), path.join(state.codexHome, "prompts"), events, options.dryRun);
+  installMergedDirectory(
+    path.join(syncedRoot, "skills"),
+    path.join(state.codexHome, "skills"),
+    "skills",
+    state.codexHome,
+    manifest,
+    events,
+    options.dryRun
+  );
+  installMergedDirectory(
+    path.join(syncedRoot, "prompts"),
+    path.join(state.codexHome, "prompts"),
+    "prompts",
+    state.codexHome,
+    manifest,
+    events,
+    options.dryRun
+  );
   installFile(path.join(syncedRoot, "config", "config.toml"), path.join(state.codexHome, "config.toml"), events, options.dryRun);
+  if (!options.dryRun) {
+    saveInstallManifest(state.codexHome, manifest);
+  }
   events.push({ level: "success", message: "Install complete. Run 'codex login' separately on this machine." });
 
   return { ok: true, events, state };
@@ -561,6 +727,8 @@ async function downloadSyncedViaGitHub(options = {}) {
   const branch = options.branch || state.branch;
   const events = [];
   const syncedRoot = path.join(state.repoRoot, "synced");
+  const tempSyncedRoot = `${syncedRoot}.tmp-${process.pid}`;
+  const oldSyncedRoot = `${syncedRoot}.old-${process.pid}`;
 
   const ref = await githubRequest(options, `/repos/${owner}/${repo}/git/ref/heads/${branch}`);
   const headCommit = await githubRequest(options, `/repos/${owner}/${repo}/git/commits/${ref.object.sha}`);
@@ -568,27 +736,47 @@ async function downloadSyncedViaGitHub(options = {}) {
   const syncedFiles = (remoteTree.tree || []).filter((item) => item.type === "blob" && item.path.startsWith("synced/") && !item.path.endsWith(".gitkeep"));
   emitProgress(options, { kind: "download", phase: "download", current: 0, total: syncedFiles.length, message: "Downloading files from GitHub." });
 
-  removeIfExists(syncedRoot);
-  ensureDir(path.join(syncedRoot, "config"));
-  ensureDir(path.join(syncedRoot, "skills"));
-  ensureDir(path.join(syncedRoot, "prompts"));
-  copyText(path.join(syncedRoot, "config", ".gitkeep"), "");
-  copyText(path.join(syncedRoot, "skills", ".gitkeep"), "");
-  copyText(path.join(syncedRoot, "prompts", ".gitkeep"), "");
+  removeIfExists(tempSyncedRoot);
+  try {
+    ensureDir(path.join(tempSyncedRoot, "config"));
+    ensureDir(path.join(tempSyncedRoot, "skills"));
+    ensureDir(path.join(tempSyncedRoot, "prompts"));
+    copyText(path.join(tempSyncedRoot, "config", ".gitkeep"), "");
+    copyText(path.join(tempSyncedRoot, "skills", ".gitkeep"), "");
+    copyText(path.join(tempSyncedRoot, "prompts", ".gitkeep"), "");
 
-  let downloadedCount = 0;
-  for (const item of syncedFiles) {
-    const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs/${item.sha}`);
-    copyFileFromBuffer(path.join(state.repoRoot, item.path), Buffer.from(blob.content.replace(/\s/g, ""), "base64"));
-    downloadedCount += 1;
-    emitProgress(options, {
-      kind: "download",
-      phase: "download",
-      current: downloadedCount,
-      total: syncedFiles.length,
-      file: item.path,
-      message: "Downloading files from GitHub.",
-    });
+    let downloadedCount = 0;
+    for (const item of syncedFiles) {
+      const blob = await githubRequest(options, `/repos/${owner}/${repo}/git/blobs/${item.sha}`);
+      const relativePath = item.path.replace(/^synced\//, "");
+      copyFileFromBuffer(path.join(tempSyncedRoot, relativePath), Buffer.from(blob.content.replace(/\s/g, ""), "base64"));
+      downloadedCount += 1;
+      emitProgress(options, {
+        kind: "download",
+        phase: "download",
+        current: downloadedCount,
+        total: syncedFiles.length,
+        file: item.path,
+        message: "Downloading files from GitHub.",
+      });
+    }
+
+    removeIfExists(oldSyncedRoot);
+    if (fs.existsSync(syncedRoot)) {
+      fs.renameSync(syncedRoot, oldSyncedRoot);
+    }
+    try {
+      fs.renameSync(tempSyncedRoot, syncedRoot);
+      removeIfExists(oldSyncedRoot);
+    } catch (error) {
+      if (!fs.existsSync(syncedRoot) && fs.existsSync(oldSyncedRoot)) {
+        fs.renameSync(oldSyncedRoot, syncedRoot);
+      }
+      throw error;
+    }
+  } catch (error) {
+    removeIfExists(tempSyncedRoot);
+    throw error;
   }
 
   emitProgress(options, { kind: "download", phase: "complete", current: syncedFiles.length, total: syncedFiles.length, message: "Download complete." });
@@ -819,6 +1007,7 @@ module.exports = {
   installCodexSettings,
   checkSyncRepositoryUrl,
   parseGitHubRepo,
+  downloadSyncedViaGitHub,
   uploadSyncedViaGitHub,
   uploadSettings,
 };

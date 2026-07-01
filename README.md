@@ -6,12 +6,12 @@ Sync your Codex setup across Windows PCs and Macs in minutes, without copying lo
 
 ## Download the Right Version
 
-Get the latest installer from [Releases](https://github.com/hybtc8888/codex-env-sync/releases/tag/v0.4.4).
+Get the latest installer from [Releases](https://github.com/hybtc8888/codex-env-sync/releases/tag/v0.4.6).
 
 | Your device | Download this file |
 | --- | --- |
-| Most Windows PCs with Intel or AMD chips | `Codex.Env.Sync.*-x64.exe` |
-| Windows on ARM devices, such as Snapdragon laptops | `Codex.Env.Sync.*-arm64.exe` |
+| Most Windows PCs with Intel or AMD chips | `Codex.Env.Sync.*-x64.exe` or `Codex.Env.Sync.*-x64.zip` |
+| Windows on ARM devices, such as Snapdragon laptops | `Codex.Env.Sync.*-arm64.exe` or `Codex.Env.Sync.*-arm64.zip` |
 | Apple Silicon Macs, such as M1/M2/M3/M4 MacBook, Mac mini, or iMac | `Codex.Env.Sync-*-arm64.dmg` |
 | Older Intel Macs | `Codex.Env.Sync-*.dmg` |
 

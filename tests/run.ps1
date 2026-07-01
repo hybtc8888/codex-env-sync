@@ -79,7 +79,7 @@ Run-Test "export copies safe assets and excludes runtime files" {
   }
 }
 
-Run-Test "install backs up synced assets and preserves auth" {
+Run-Test "install merges synced assets and preserves auth" {
   $codexHome = New-TempFolder
   $repo = New-TempFolder
   try {
@@ -99,7 +99,7 @@ Run-Test "install backs up synced assets and preserves auth" {
     Assert-FileText (Join-Path $codexHome "skills/demo/SKILL.md") "new-skill"
     Assert-FileText (Join-Path $codexHome "prompts/base.md") "new-prompt"
     Assert-FileText (Join-Path $codexHome "config.toml") "model = `"new`""
-    Assert-FileText (Join-Path $codexHome "skills.backup/old/SKILL.md") "old-skill"
+    Assert-FileText (Join-Path $codexHome "skills/old/SKILL.md") "old-skill"
     Assert-FileText (Join-Path $codexHome "auth.json") "local-auth"
   } finally {
     Remove-Item -LiteralPath $codexHome -Recurse -Force
